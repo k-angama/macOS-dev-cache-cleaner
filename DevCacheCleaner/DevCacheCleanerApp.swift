@@ -13,7 +13,9 @@ struct DevCacheCleanerApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            CleanerHomeView(viewModel: container.cleanerHomeViewModel)
+            CleanerHomeView(
+                viewModel: container.cleanerHomeViewModel
+            )
                 .frame(width: 600)
         } label: {
             Image("FeatherDusterIcon")

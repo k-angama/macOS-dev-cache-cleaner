@@ -23,20 +23,87 @@ struct LoadStorageOverviewUseCase {
         self.refreshStorageCategoryUseCase = refreshStorageCategoryUseCase
     }
 
-    func execute(homeURL: URL) async -> StorageOverviewEntity {
-        var categories = buildStorageCategoriesUseCase.execute()
+    func execute(homeURL: URL) -> AsyncStream<LoadStorageOverviewEventEntity> {
+        AsyncStream { continuation in
+            let task = Task {
+                var categories = buildStorageCategoriesUseCase.execute()
 
-        for index in categories.indices {
-            categories[index] = await refreshStorageCategoryUseCase.execute(
-                homeURL: homeURL,
-                category: categories[index]
-            )
+                continuation.yield(
+                    makeEvent(
+                        phase: .started,
+                        categories: categories
+                    )
+                )
+
+                await withTaskGroup(of: (Int, StorageCategoryEntity)?.self) { group in
+                    for (index, category) in categories.enumerated() {
+                        group.addTask {
+                            guard Task.isCancelled == false else {
+                                return nil
+                            }
+
+                            let updatedCategory = await refreshStorageCategoryUseCase.execute(
+                                homeURL: homeURL,
+                                category: category
+                            )
+
+                            guard Task.isCancelled == false else {
+                                return nil
+                            }
+
+                            return (index, updatedCategory)
+                        }
+                    }
+
+                    for await result in group {
+                        guard Task.isCancelled == false else {
+                            group.cancelAll()
+                            continuation.finish()
+                            return
+                        }
+
+                        guard let (index, updatedCategory) = result else {
+                            continue
+                        }
+
+                        categories[index] = updatedCategory
+
+                        continuation.yield(
+                            makeEvent(
+                                phase: .categoryUpdated,
+                                categories: categories,
+                                updatedCategoryID: updatedCategory.id
+                            )
+                        )
+                    }
+                }
+
+                continuation.yield(
+                    makeEvent(
+                        phase: .finished,
+                        categories: categories
+                    )
+                )
+                continuation.finish()
+            }
+
+            continuation.onTermination = { @Sendable _ in
+                task.cancel()
+            }
         }
+    }
 
-        return StorageOverviewEntity(
+    private func makeEvent(
+        phase: LoadStorageOverviewEventEntity.Phase,
+        categories: [StorageCategoryEntity],
+        updatedCategoryID: UUID? = nil
+    ) -> LoadStorageOverviewEventEntity {
+        LoadStorageOverviewEventEntity(
+            phase: phase,
+            categories: categories,
+            updatedCategoryID: updatedCategoryID,
             totalSize: diskRepository.totalDiskCapacity,
-            freeSize: diskRepository.availableDiskCapacity,
-            categories: categories
+            freeSize: diskRepository.availableDiskCapacity
         )
     }
 }

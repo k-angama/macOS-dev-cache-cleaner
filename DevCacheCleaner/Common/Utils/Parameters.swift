@@ -14,7 +14,7 @@ protocol Parameters {
 struct ParametersImpl: Parameters {
     
     struct Keys {
-        static let homeFolderBookmark = "com.angama.home-folder-bookmark-test"
+        static let homeFolderBookmark = "com.angama.home-folder-bookmarks"
     }
     
     var homeFolderBookmark: Data? {

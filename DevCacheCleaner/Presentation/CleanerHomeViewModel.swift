@@ -304,12 +304,14 @@ class CleanerHomeViewModel {
 
         let category = categories[index]
         let categoryID = category.id
+        setCategoryRowState(.loading, for: categoryID)
 
         let updatedCategory = await refreshStorageCategoryUseCase.execute(
             homeURL: homeURL,
             category: category
         )
         updateCategory(updatedCategory, for: categoryID)
+        setCategoryRowState(.ready, for: categoryID)
 
     }
 
@@ -375,19 +377,32 @@ class CleanerHomeViewModel {
 
     @MainActor
     private func loadStorageOverview(homeURL: URL) async {
-        setAllCategoryRowStates(.loading)
-
-        let overview = await loadStorageOverviewUseCase.execute(homeURL: homeURL)
-        categories = overview.categories
-        totalSize = overview.totalSize
-        freeSize = overview.freeSize
-        setAllCategoryRowStates(.ready)
+        for await event in loadStorageOverviewUseCase.execute(homeURL: homeURL) {
+            applyLoadStorageOverviewEvent(event)
+        }
     }
 
     private func updateDiskSpace() {
         let diskSpace = readDiskSpaceUseCase.execute()
         totalSize = diskSpace.totalSize
         freeSize = diskSpace.freeSize
+    }
+
+    private func applyLoadStorageOverviewEvent(_ event: LoadStorageOverviewEventEntity) {
+        categories = event.categories
+        totalSize = event.totalSize
+        freeSize = event.freeSize
+
+        switch event.phase {
+        case .started:
+            setAllCategoryRowStates(.loading)
+        case .categoryUpdated:
+            if let updatedCategoryID = event.updatedCategoryID {
+                setCategoryRowState(.ready, for: updatedCategoryID)
+            }
+        case .finished:
+            setAllCategoryRowStates(.ready)
+        }
     }
     
 }
