@@ -119,15 +119,49 @@ struct CleanerHomeViewModelTests {
         context.monitoringRepository.folderDidChange?("Library/Caches/A/file")
 
         let didRefresh = await waitUntil {
-            abs(context.viewModel.categories[0].size - 3.0) < 0.0001 &&
-            context.viewModel.categoryRowStates[category.id] == .ready
+            abs(context.viewModel.categories[0].size - 3.0) < 0.0001
         }
 
         context.viewModel.stopMonitoring()
 
         #expect(context.monitoringRepository.startedURL == testHomeURL)
         #expect(didRefresh)
+        #expect(context.viewModel.categoryRowStates[category.id] == nil)
         #expect(context.monitoringRepository.stopCallCount == 1)
+    }
+
+    @Test func selectCategoryForDetails_whenCategoriesReload_syncsSelectionByName() {
+        let initialCategory = makeCategory(
+            name: "Flutter/pub-cache",
+            subcategories: [makeSubCategory(name: ".pub-cache", size: 1.0)]
+        )
+        let updatedCategory = makeCategory(
+            name: "Flutter/pub-cache",
+            subcategories: [makeSubCategory(name: ".pub-cache", size: 4.0)]
+        )
+        let context = makeSUT()
+
+        context.viewModel.categories = [initialCategory]
+        context.viewModel.selectCategoryForDetails(initialCategory)
+        context.viewModel.categories = [updatedCategory]
+
+        #expect(context.viewModel.selectedCategoryForDetails?.name == updatedCategory.name)
+        #expect(context.viewModel.selectedCategoryForDetails?.id == updatedCategory.id)
+        #expect(abs((context.viewModel.selectedCategoryForDetails?.size ?? 0) - 4.0) < 0.0001)
+    }
+
+    @Test func clearSelectedCategoryForDetails_clearsDetailsSelection() {
+        let category = makeCategory(
+            name: "Flutter/pub-cache",
+            subcategories: [makeSubCategory(name: ".pub-cache", size: 1.0)]
+        )
+        let context = makeSUT()
+
+        context.viewModel.categories = [category]
+        context.viewModel.selectCategoryForDetails(category)
+        context.viewModel.clearSelectedCategoryForDetails()
+
+        #expect(context.viewModel.selectedCategoryForDetails == nil)
     }
 }
 

@@ -10,10 +10,10 @@ import AppKit
 
 struct CleanerHomeView: View {
     @State var viewModel: CleanerHomeViewModel
-    @State private var selectedCategory: StorageCategoryEntity?
     @Environment(\.openWindow) var openWindow
     
     var body: some View {
+
         VStack(alignment: .leading, spacing: 18) {
             if viewModel.isAccessUserDirectory {
                 VStack(alignment: .leading, spacing: 18) {
@@ -24,7 +24,7 @@ struct CleanerHomeView: View {
                         rowStates: viewModel.categoryRowStates,
                         isCleaning: viewModel.isCleaning,
                         onOpenDetails: { category in
-                            selectedCategory = category
+                            viewModel.selectCategoryForDetails(category)
                         },
                         onClean: { entity in
                             viewModel.askRemoveDirectory(entiy: entity)
@@ -56,7 +56,7 @@ struct CleanerHomeView: View {
                 Menu {
                     Button("About DevCacheCleaner") {
                         openWindow(
-                            id: Constants.WindowIds.about,
+                            id: "about-dev-cache-cleaner",
                         )
                     }
                     Divider()
@@ -105,9 +105,9 @@ struct CleanerHomeView: View {
             }
         })
         .floatingPanel(
-            of: $selectedCategory,
-        ) { selectedCategory in
-            StorageCategoryDetailsView(category: selectedCategory)
+            of: $viewModel.selectedCategoryForDetails
+        ) { category in
+            StorageCategoryDetailsView(category: category)
         }
 
     }

@@ -44,7 +44,7 @@ fileprivate struct FloatingPanelModifier<Item: Equatable, PanelContent: View>: V
     @State private var hostWindow: NSWindow?
 
     /// Determines the starting size of the panel
-    var contentRect: CGRect = CGRect(x: 0, y: 0, width: 624, height: 512)
+    var contentRect: CGRect = CGRect(x: 0, y: 0, width: 460, height: 240)
 
     /// Holds the panel content's view closure
     @ViewBuilder let view: (Item) -> PanelContent
@@ -53,11 +53,6 @@ fileprivate struct FloatingPanelModifier<Item: Equatable, PanelContent: View>: V
     @State private var panel: FloatingPanel<PanelContent>?
 
     func body(content: Content) -> some View {
-        /*let _ = item.map { currentItem in
-            panel?.updateContent {
-                view(currentItem)
-            }
-        }*/
 
         content
             .background(
@@ -157,13 +152,11 @@ extension View {
      **/
     func floatingPanel<Item: Equatable, Content: View>(
         of item: Binding<Item?>,
-        contentRect: CGRect = CGRect(x: 0, y: 0, width: 460, height: 240),
         @ViewBuilder content: @escaping (Item) -> Content
     ) -> some View {
         self.modifier(
             FloatingPanelModifier(
                 item: item,
-                contentRect: contentRect,
                 view: content
             )
         )
