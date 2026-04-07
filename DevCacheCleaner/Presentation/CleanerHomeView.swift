@@ -9,11 +9,11 @@ import SwiftUI
 import AppKit
 
 struct CleanerHomeView: View {
-    
     @State var viewModel: CleanerHomeViewModel
     @Environment(\.openWindow) var openWindow
     
     var body: some View {
+
         VStack(alignment: .leading, spacing: 18) {
             if viewModel.isAccessUserDirectory {
                 VStack(alignment: .leading, spacing: 18) {
@@ -23,6 +23,9 @@ struct CleanerHomeView: View {
                         categories: viewModel.categories,
                         rowStates: viewModel.categoryRowStates,
                         isCleaning: viewModel.isCleaning,
+                        onOpenDetails: { category in
+                            viewModel.selectCategoryForDetails(category)
+                        },
                         onClean: { entity in
                             viewModel.askRemoveDirectory(entiy: entity)
                         },
@@ -33,13 +36,19 @@ struct CleanerHomeView: View {
                 }
                 .padding(.top)
             } else {
-                VStack {
-                    Text("You need to grant access to your Home folder.")
+                VStack(alignment: .center, spacing: 10) {
+                    Text("Access to the Home folder is required")
+                        .font(.headline)
+                    Text("DevCacheCleaner needs permission to access your Home folder and scan cache files.")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
                     Button("Grant Access", systemImage: "square.on.square") {
                         viewModel.requesUserDirectoryAccess()
                     }
+                    .padding(.top)
                 }
                 .frame(maxWidth: .infinity)
+                .padding(.top)
             }
             Divider()
             HStack {
@@ -47,7 +56,7 @@ struct CleanerHomeView: View {
                 Menu {
                     Button("About DevCacheCleaner") {
                         openWindow(
-                            id: Constants.WindowIds.about,
+                            id: "about-dev-cache-cleaner",
                         )
                     }
                     Divider()
@@ -95,6 +104,11 @@ struct CleanerHomeView: View {
                 }
             }
         })
+        .floatingPanel(
+            of: $viewModel.selectedCategoryForDetails
+        ) { category in
+            StorageCategoryDetailsView(category: category)
+        }
 
     }
     
@@ -109,7 +123,8 @@ struct CleanerHomeView: View {
 }
 
 #Preview {
-    let viewModel = AppContainer().cleanerHomeViewModel
+    let container = AppContainer()
+    let viewModel = container.cleanerHomeViewModel
     viewModel.isAccessUserDirectory = false
     return CleanerHomeView(
         viewModel: viewModel
@@ -117,7 +132,8 @@ struct CleanerHomeView: View {
 }
 
 #Preview("AccessUserDirectory", body: {
-    let viewModel = AppContainer().cleanerHomeViewModel
+    let container = AppContainer()
+    let viewModel = container.cleanerHomeViewModel
     let categories: [StorageCategoryEntity] = [
         .init(name: "Android/Gradle Caches", color: .red, size: 0, categories: []),
         .init(name: "Xcode Caches & DerivedData", color: .orange, size: 100, categories: []),

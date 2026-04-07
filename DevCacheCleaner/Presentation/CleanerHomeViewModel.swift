@@ -10,24 +10,28 @@ import SwiftUI
 
 @Observable
 class CleanerHomeViewModel {
-    
+
     // MARK: - Output
-    
+
     var isAccessUserDirectory: Bool = false
     var totalSize: CGFloat = 0
     var freeSize: CGFloat = 0
-    var categories: [StorageCategoryEntity] = []
+    var categories: [StorageCategoryEntity] = [] {
+        didSet {
+            syncSelectedCategoryForDetails()
+        }
+    }
     var categoryRowStates: [UUID: StorageCategoryRowState] = [:]
     var isAlertErrorRequest: Bool = false
     var alertErrorMessage: String = "No access directory"
     var isAlertNotHomeDirectory: Bool = false
     var isAlertCleanCache: Bool = false
     var storageCategorySelected: StorageCategoryEntity?
+    var selectedCategoryForDetails: StorageCategoryEntity?
     var isCleaning: Bool = false
-   
-    
-    // MARK: - Private property
-    
+
+    // MARK: - Dependencies
+
     private let requestHomeAccessUseCase: RequestHomeAccessUseCase
     private let resolveHomeAccessUseCase: ResolveHomeAccessUseCase
     private let buildStorageCategoriesUseCase: BuildStorageCategoriesUseCase
@@ -38,8 +42,9 @@ class CleanerHomeViewModel {
     private let loadStorageOverviewUseCase: LoadStorageOverviewUseCase
     private let readDiskSpaceUseCase: ReadDiskSpaceUseCase
     private let cleanupProgressStore: CleanupProgressStore
-    
-    
+
+    // MARK: - Init
+
     init(
         requestHomeAccessUseCase: RequestHomeAccessUseCase,
         resolveHomeAccessUseCase: ResolveHomeAccessUseCase,
@@ -64,9 +69,9 @@ class CleanerHomeViewModel {
         self.cleanupProgressStore = cleanupProgressStore
         setup()
     }
-    
-    // MARK: - Public Methode
-    
+
+    // MARK: - Access
+
     func requesUserDirectoryAccess() {
         isAlertErrorRequest = false
 
@@ -90,9 +95,10 @@ class CleanerHomeViewModel {
         } else {
             isAccessUserDirectory = false
         }
-        
     }
-    
+
+    // MARK: - Cleanup Actions
+
     func askRemoveDirectory(entiy: StorageCategoryEntity) {
         guard isCleaning == false else {
             return
@@ -177,7 +183,9 @@ class CleanerHomeViewModel {
 
         return "All Caches"
     }
-    
+
+    // MARK: - Monitoring
+
     func startMonitoring() {
         if let homeURL = resolveHomeAccessUseCase.execute() {
             observeDiskChangesUseCase.start(url: homeURL) { [weak self] path in
@@ -189,16 +197,60 @@ class CleanerHomeViewModel {
     func stopMonitoring() {
         observeDiskChangesUseCase.stop()
     }
-    
-    
-    // MARK: - Private Methode
-    
+
+    // MARK: - Details Selection
+
+    func selectCategoryForDetails(_ category: StorageCategoryEntity) {
+        selectedCategoryForDetails = category
+        syncSelectedCategoryForDetails()
+    }
+
+    func clearSelectedCategoryForDetails() {
+        selectedCategoryForDetails = nil
+    }
+
+    // MARK: - Setup
+
     private func setup() {
         categories = buildStorageCategoriesUseCase.execute()
         categoryRowStates.removeAll()
         resolveHomeURL()
         updateDiskSpace()
     }
+
+    // MARK: - Loading
+
+    @MainActor
+    private func loadStorageOverview(homeURL: URL) async {
+        for await event in loadStorageOverviewUseCase.execute(homeURL: homeURL) {
+            applyLoadStorageOverviewEvent(event)
+        }
+    }
+
+    private func applyLoadStorageOverviewEvent(_ event: LoadStorageOverviewEventEntity) {
+        categories = event.categories
+        totalSize = event.totalSize
+        freeSize = event.freeSize
+
+        switch event.phase {
+        case .started:
+            setAllCategoryRowStates(.loading)
+        case .categoryUpdated:
+            if let updatedCategoryID = event.updatedCategoryID {
+                setCategoryRowState(.ready, for: updatedCategoryID)
+            }
+        case .finished:
+            setAllCategoryRowStates(.ready)
+        }
+    }
+
+    private func updateDiskSpace() {
+        let diskSpace = readDiskSpaceUseCase.execute()
+        totalSize = diskSpace.totalSize
+        freeSize = diskSpace.freeSize
+    }
+
+    // MARK: - Cleanup Execution
 
     @MainActor
     private func performCleanup(of entity: StorageCategoryEntity, homeURL: URL) async {
@@ -281,43 +333,6 @@ class CleanerHomeViewModel {
             setCategoryRowState(.ready, for: categoryID)
         }
     }
-    
-    private func handleChanges(_ path: String) {
-        updateDiskSpace()
-
-        guard
-            let homeURL = resolveHomeAccessUseCase.execute(),
-            let categoryIndex = categoryIndex(containing: path)
-        else {
-            return
-        }
-
-        Task { [weak self] in
-            await self?.refreshCategory(at: categoryIndex, homeURL: homeURL)
-        }
-    }
-    
-    private func refreshCategory(at index: Int, homeURL: URL) async {
-        guard categories.indices.contains(index) else {
-            return
-        }
-
-        let category = categories[index]
-        let categoryID = category.id
-
-        let updatedCategory = await refreshStorageCategoryUseCase.execute(
-            homeURL: homeURL,
-            category: category
-        )
-        updateCategory(updatedCategory, for: categoryID)
-
-    }
-
-    private func categoryIndex(containing path: String) -> Int? {
-        categories.firstIndex { category in
-            category.categories.contains(where: { path.contains($0.path) })
-        }
-    }
 
     private func applyCleanupEvent(
         _ event: CleanStorageCategoryEventEntity,
@@ -351,6 +366,46 @@ class CleanerHomeViewModel {
         }
     }
 
+    // MARK: - Monitoring Updates
+
+    private func handleChanges(_ path: String) {
+        updateDiskSpace()
+
+        guard
+            let homeURL = resolveHomeAccessUseCase.execute(),
+            let categoryIndex = categoryIndex(containing: path)
+        else {
+            return
+        }
+
+        Task { [weak self] in
+            await self?.refreshCategory(at: categoryIndex, homeURL: homeURL)
+        }
+    }
+
+    private func refreshCategory(at index: Int, homeURL: URL) async {
+        guard categories.indices.contains(index) else {
+            return
+        }
+
+        let category = categories[index]
+        let categoryID = category.id
+
+        let updatedCategory = await refreshStorageCategoryUseCase.execute(
+            homeURL: homeURL,
+            category: category
+        )
+        updateCategory(updatedCategory, for: categoryID)
+    }
+
+    private func categoryIndex(containing path: String) -> Int? {
+        categories.firstIndex { category in
+            category.categories.contains(where: { path.contains($0.path) })
+        }
+    }
+
+    // MARK: - State Updates
+
     private func updateCategory(_ updatedCategory: StorageCategoryEntity, for id: UUID) {
         guard let index = categories.firstIndex(where: { $0.id == id }) else {
             return
@@ -373,21 +428,13 @@ class CleanerHomeViewModel {
         }
     }
 
-    @MainActor
-    private func loadStorageOverview(homeURL: URL) async {
-        setAllCategoryRowStates(.loading)
+    private func syncSelectedCategoryForDetails() {
+        guard let selectedCategoryForDetails else {
+            return
+        }
 
-        let overview = await loadStorageOverviewUseCase.execute(homeURL: homeURL)
-        categories = overview.categories
-        totalSize = overview.totalSize
-        freeSize = overview.freeSize
-        setAllCategoryRowStates(.ready)
+        self.selectedCategoryForDetails = categories.first {
+            $0.name == selectedCategoryForDetails.name
+        }
     }
-
-    private func updateDiskSpace() {
-        let diskSpace = readDiskSpaceUseCase.execute()
-        totalSize = diskSpace.totalSize
-        freeSize = diskSpace.freeSize
-    }
-    
 }

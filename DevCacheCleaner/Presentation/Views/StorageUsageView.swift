@@ -20,8 +20,10 @@ struct StorageUsageView: View {
     let categories: [StorageCategoryEntity]
     let rowStates: [UUID: StorageCategoryRowState]
     let isCleaning: Bool
+    var onOpenDetails: ((StorageCategoryEntity) -> Void)? = nil
     var onClean: ((StorageCategoryEntity) -> Void)? = nil
     var onCleanAll: (() -> Void)? = nil
+    @State private var hoveredCategoryID: UUID?
 
     var totalCategoriesSize: CGFloat {
         categories.sum({ $0.size })
@@ -37,6 +39,10 @@ struct StorageUsageView: View {
 
     func rowState(for category: StorageCategoryEntity) -> StorageCategoryRowState {
         rowStates[category.id] ?? .ready
+    }
+
+    func isHovered(_ category: StorageCategoryEntity) -> Bool {
+        hoveredCategoryID == category.id
     }
 
     var rowActionTransition: AnyTransition {
@@ -111,10 +117,39 @@ struct StorageUsageView: View {
                 ForEach(categories) { cat in
                     let state = rowState(for: cat)
                     HStack {
-                        Label {
-                            Text(cat.name)
-                        } icon: {
-                            Circle().fill(cat.color).frame(width: 10, height: 10)
+                        Button {
+                            onOpenDetails?(cat)
+                        } label: {
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(cat.color)
+                                    .frame(width: 10, height: 10)
+
+                                Text(cat.name)
+                                    //.underline(isHovered(cat))
+
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .opacity(isHovered(cat) ? 1 : 0.35)
+                            }
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 8)
+                            .background(
+                                isHovered(cat)
+                                ? cat.color.opacity(0.12)
+                                : Color.clear
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Show included paths")
+                        .onHover { isHovering in
+                            if isHovering {
+                                hoveredCategoryID = cat.id
+                            } else if hoveredCategoryID == cat.id {
+                                hoveredCategoryID = nil
+                            }
                         }
                         Spacer()
                         Text(cat.size.byteCountString)
@@ -195,6 +230,9 @@ struct StorageUsageView: View {
             categories[6].id: .deleting
         ],
         isCleaning: false,
+        onOpenDetails: { cat in
+            print("Open details for: \(cat.name)")
+        },
         onClean: { cat in
             print("Clean tapped for: \(cat.name)")
         },
