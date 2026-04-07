@@ -3,6 +3,8 @@
 //  DevCacheCleaner
 //
 //  Created by Karim Angama on 02/04/2026.
+//  Adapted from Cindori's "Make a floating panel in SwiftUI for macOS":
+//  https://cindori.com/developer/floating-panel
 //
 
 import AppKit
