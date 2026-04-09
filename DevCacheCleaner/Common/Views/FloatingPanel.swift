@@ -45,12 +45,6 @@ class FloatingPanel<Content: View>: NSPanel {
         isMovable = false
         isReleasedWhenClosed = false
      
-        /// Since there is no title bar make the window moveable by dragging on the background
-        isMovableByWindowBackground = false
-     
-        /// Hide the panel when the app deactivates
-        //hidesOnDeactivate = true
-     
         /// Hide all traffic light buttons
         standardWindowButton(.closeButton)?.isHidden = true
         standardWindowButton(.miniaturizeButton)?.isHidden = true
