@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./DevCacheCleaner/Assets.xcassets/FeatherDusterIcon.imageset/FeatherDusterIcon.png" alt="DevCacheCleaner icon" width="128" height="128">
+  <img src="./Ressources/DevCacheCleaner-icon.png" alt="DevCacheCleaner icon" width="128" height="128">
 </p>
 
 <h1 align="center">DevCacheCleaner</h1>
@@ -10,6 +10,12 @@
 
 <p align="center">
   DevCacheCleaner scans common cache-heavy directories, shows how much disk space they use, and lets you clean one category or all supported categories with live progress feedback.
+</p>
+
+---
+
+<p align="center">
+  <img src="./Ressources/DevCacheCleaner-screenshot.jpg" alt="DevCacheCleaner Screenshot"  >
 </p>
 
 If you want to reclaim storage used by Xcode, Gradle, CocoaPods, npm, browsers, and other development tools without manually digging through `~/Library` and hidden folders, this project is built for that workflow.
@@ -30,37 +36,6 @@ DevCacheCleaner keeps the scope intentionally focused:
 - Clean-all workflow across all non-empty categories
 - Cleanup progress window with live deletion feedback
 - Automatic refresh when watched cache folders change
-- Test coverage for use cases and view models
-
-## What DevCacheCleaner Can Clean
-
-### IDE Caches
-
-Editor-related cache locations such as VS Code cache folders and other development-tool support files can quietly grow over time. DevCacheCleaner groups those locations into a single category so they can be reviewed and cleaned quickly.
-
-### CocoaPods Caches
-
-CocoaPods repositories and related cache folders can consume a noticeable amount of space, especially on machines used across many projects. These paths are included as a dedicated cleanup category.
-
-### npm and Yarn Caches
-
-Node package manager caches are common disk-space offenders on development machines. DevCacheCleaner scans the configured npm and Yarn cache paths and reports their combined usage.
-
-### Android and Gradle Caches
-
-Gradle caches, daemons, and Android Studio related cache folders can grow significantly after SDK, emulator, and build activity. The app groups those paths into one category for easier cleanup.
-
-### Xcode Caches and DerivedData
-
-Xcode generated data is one of the largest sources of reclaimable disk usage on many macOS development machines. DevCacheCleaner includes DerivedData, documentation cache, archives, simulator device data, and other Xcode-related cache paths configured in the app.
-
-### Browser Caches
-
-Developer workflows often involve multiple browsers, and their caches can also build up over time. Chrome, Brave, Firefox, Safari, Edge, and Opera cache folders are included in the current configuration.
-
-### Flutter and pub-cache
-
-Flutter tooling and `.pub-cache` content can accumulate over time, especially when switching between projects or SDK versions. DevCacheCleaner exposes that storage as its own category.
 
 ## How It Works
 
@@ -70,50 +45,14 @@ Flutter tooling and `.pub-cache` content can accumulate over time, especially wh
 4. Folder changes are monitored so affected categories can refresh automatically.
 5. Cleanup runs for one category or all non-empty categories and reports progress in a separate window.
 
-## Cache Categories
-
-The current configuration includes:
-
-- IDE caches
-- CocoaPods caches
-- npm and Yarn caches
-- Android and Gradle caches
-- Xcode caches and DerivedData
-- Browser caches
-- Flutter and `.pub-cache`
-
-Definitions live in [`Constants.swift`](./DevCacheCleaner/Common/Utils/Constants.swift).
-
 ## Run In Xcode
 
 1. Open `DevCacheCleaner.xcodeproj`
 2. Select the `DevCacheCleaner` scheme
 3. Run the app
-4. Grant access to your Home directory when prompted
 
 The app launches from the macOS menu bar and opens a secondary window during cleanup to display progress.
 
-## Build
-
-```bash
-xcodebuild -project DevCacheCleaner.xcodeproj \
-  -scheme DevCacheCleaner \
-  -configuration Debug \
-  CODE_SIGNING_ALLOWED=NO \
-  CODE_SIGNING_REQUIRED=NO \
-  build
-```
-
-## Test
-
-```bash
-xcodebuild -project DevCacheCleaner.xcodeproj \
-  -scheme DevCacheCleaner \
-  -configuration Debug \
-  CODE_SIGNING_ALLOWED=NO \
-  CODE_SIGNING_REQUIRED=NO \
-  test
-```
 
 ## Architecture
 
@@ -134,6 +73,58 @@ Main behavior is driven by focused domain use cases such as:
 - `ReadDiskSpaceUseCase`
 - `ObserveDiskChangesUseCase`
 
+## Project Structure
+
+```text
+DevCacheCleaner/
+├── DevCacheCleanerApp.swift            # Menu bar app entry and window scenes
+├── Assets.xcassets/                    # App icon and in-app artwork
+├── Common/
+│   ├── Extensions/                     # Shared helpers for URL, storage sizes, collections, colors
+│   ├── Managers/                       # File-system, monitoring, and Home-access integrations
+│   └── Utils/                          # Constants, alerts, parameters, shared utilities
+├── Data/
+│   └── Repositories/                   # Repository implementations
+├── Domain/
+│   ├── Entities/                       # Storage models and cleanup progress events
+│   ├── Repositories/                   # Repository protocols
+│   └── UseCases/
+│       ├── Cleanup/                    # Clean one category or all categories
+│       ├── HomeAccess/                 # Security-scoped Home-folder access
+│       ├── Monitoring/                 # Folder change observation
+│       └── Storage/                    # Build, load, refresh, and read storage data
+├── Presentation/
+│   ├── Stores/                         # Shared progress state for the cleanup window
+│   ├── Views/                          # Reusable SwiftUI views
+│   └── ...                             # Home/progress views and view models
+└── DevCacheCleanerTests/
+    ├── UseCase/                        # Domain use case tests
+    ├── ViewModel/                      # Presentation view model tests
+    ├── mock/                           # Repository mocks
+    └── Utils/                          # Shared test fixtures and async helpers
+```
+
+## Default Cache Categories
+
+DevCacheCleaner ships with built-in cleanup categories defined in
+[`Constants.swift`](./DevCacheCleaner/Common/Utils/Constants.swift). Each one
+groups a set of cache paths inside the user Home directory and is scanned,
+displayed, and cleaned as a single category in the app.
+
+| Category | Typical Targets | Example Paths |
+| --- | --- | --- |
+| IDE Caches | VS Code cache data and workspace storage | `~/Library/Application Support/Code/Cache`, `~/Library/Application Support/Code/CachedData`, `~/Library/Application Support/Code/User/workspaceStorage` |
+| CocoaPods Caches | CocoaPods specs repos and cache folders | `~/.cocoapods/repos`, `~/Library/Caches/CocoaPods` |
+| npm and Yarn Caches | Node package manager caches | `~/.npm-cache-user/_cacache`, `~/Library/Caches/Yarn` |
+| Android and Gradle Caches | Gradle caches, daemon data, Android Studio cache roots | `~/.gradle/caches`, `~/.gradle/daemon`, `~/Library/Caches/Google`, `~/Library/Caches/JetBrains` |
+| Xcode Caches and DerivedData | DerivedData, Archives, simulator data, Xcode caches | `~/Library/Developer/Xcode/DerivedData`, `~/Library/Developer/Xcode/Archives`, `~/Library/Developer/CoreSimulator/Devices` |
+| Browser Caches | Chrome, Brave, Firefox, Safari, Edge, and Opera caches | `~/Library/Caches/Google/Chrome`, `~/Library/Caches/BraveSoftware/Brave-Browser`, `~/Library/Caches/com.apple.Safari` |
+| Flutter and pub-cache | Flutter and Dart package cache data | `~/.pub-cache` |
+
+Some built-in categories use prefix-based matching. For example, the
+Android/Gradle category only targets `AndroidStudio*` directories inside
+certain JetBrains and Google cache roots.
+
 ## Notes
 
 - The app only cleans paths explicitly listed in `Constants`
@@ -150,3 +141,10 @@ The project name, logos, icon assets, and official branding are not granted
 under the GPL code license. See [`TRADEMARKS.md`](./TRADEMARKS.md).
 
 Official Mac App Store releases are published by Karim Angama.
+
+---
+
+## 🧑‍💻 Author
+
+**k.angama**  
+[GitHub](https://github.com/k-angama) • [LinkedIn](https://www.linkedin.com/in/karim-angama)

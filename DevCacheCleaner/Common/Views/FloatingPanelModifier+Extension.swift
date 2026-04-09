@@ -11,39 +11,11 @@ import AppKit
 import Foundation
 import SwiftUI
 
-final class FloatingPanelWindowReaderNSView: NSView {
-    var onResolve: ((NSWindow?) -> Void)?
-
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        DispatchQueue.main.async { [weak self] in
-            self?.onResolve?(self?.window)
-        }
-    }
-}
-
-fileprivate struct FloatingPanelWindowReader: NSViewRepresentable {
-    let onResolve: (NSWindow?) -> Void
-
-    func makeNSView(context: Context) -> FloatingPanelWindowReaderNSView {
-        let view = FloatingPanelWindowReaderNSView()
-        view.onResolve = onResolve
-        return view
-    }
-
-    func updateNSView(_ nsView: FloatingPanelWindowReaderNSView, context: Context) {
-        nsView.onResolve = onResolve
-
-        DispatchQueue.main.async {
-            onResolve(nsView.window)
-        }
-    }
-}
-
 /// Add a ``FloatingPanel`` to a view hierarchy.
 fileprivate struct FloatingPanelModifier<Item: Equatable, PanelContent: View>: ViewModifier {
+    
+    //private var hostWindow: NSWindow?
     @Binding var item: Item?
-    @State private var hostWindow: NSWindow?
 
     /// Determines the starting size of the panel
     var contentRect: CGRect = CGRect(x: 0, y: 0, width: 460, height: 240)
@@ -57,28 +29,10 @@ fileprivate struct FloatingPanelModifier<Item: Equatable, PanelContent: View>: V
     func body(content: Content) -> some View {
 
         content
-            .background(
-                FloatingPanelWindowReader { window in
-                    hostWindow = window
-                }
-            )
-            .onAppear {
-                if let item {
-                    ensurePanel(for: item)
-                    present()
-                }
-            }
-            .onChange(of: hostWindow) { _, _ in
-                if item != nil {
-                    present()
-                }
-            }
             .onChange(of: item) { _, newValue in
                 if let item = newValue {
                     ensurePanel(for: item)
-                    DispatchQueue.main.async {
-                        present()
-                    }
+                    present()
                 } else {
                     panel?.close()
                 }
@@ -87,9 +41,14 @@ fileprivate struct FloatingPanelModifier<Item: Equatable, PanelContent: View>: V
 
     /// Present the panel and make it the key window
     func present() {
-        positionPanel()
-        panel?.orderFront(nil)
-        panel?.makeKey()
+        let anchor = NSApp.keyWindow ?? NSApp.mainWindow
+        DispatchQueue.main.async {
+            if panel?.isVisible == false {
+                positionPanel(relativeTo: anchor)
+            }
+            panel?.orderFront(nil)
+            panel?.makeKey()
+        }
     }
 
     func ensurePanel(for currentItem: Item) {
@@ -110,8 +69,9 @@ fileprivate struct FloatingPanelModifier<Item: Equatable, PanelContent: View>: V
         }
     }
 
-    func positionPanel() {
-        guard let panel, let hostWindow else {
+    func positionPanel(relativeTo hostWindow: NSWindow?) {
+        
+        guard let panel, let hostWindow, hostWindow !== panel else {
             panel?.center()
             return
         }
@@ -149,7 +109,6 @@ fileprivate struct FloatingPanelModifier<Item: Equatable, PanelContent: View>: V
 extension View {
     /** Present a ``FloatingPanel`` in SwiftUI fashion
      - Parameter of: The optional item driving the panel presentation state
-     - Parameter contentRect: The initial content frame of the window
      - Parameter content: The displayed content
      **/
     func floatingPanel<Item: Equatable, Content: View>(
