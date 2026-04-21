@@ -130,27 +130,27 @@ private extension StorageCategoryEntity {
             categories: [
                 StorageSubCategoryEntity(
                     path: "Library/Application Support/Code/User/workspaceStorage",
-                    match: "",
+                    rule: .allContents,
                     size: 1_731_485_440
                 ),
                 StorageSubCategoryEntity(
                     path: "Library/Application Support/Code/CachedData",
-                    match: "",
+                    rule: .allContents,
                     size: 1_280_000_000
                 ),
                 StorageSubCategoryEntity(
                     path: "Library/Application Support/Code/Cache",
-                    match: "",
+                    rule: .allContents,
                     size: 845_000_000
                 ),
                 StorageSubCategoryEntity(
                     path: "Library/Caches/JetBrains",
-                    match: "AndroidStudio",
+                    rule: .childNamePrefix("AndroidStudio"),
                     size: 615_000_000
                 ),
                 StorageSubCategoryEntity(
                     path: "Library/Caches/CocoaPods",
-                    match: "",
+                    rule: .allContents,
                     size: 240_000_000
                 )
             ]

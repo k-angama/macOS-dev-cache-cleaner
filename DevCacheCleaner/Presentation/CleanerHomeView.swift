@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  CleanerHomeView.swift
 //  DevCacheCleaner
 //
 //  Created by Karim Angama on 05/03/2026.
@@ -27,7 +27,7 @@ struct CleanerHomeView: View {
                             viewModel.selectCategoryForDetails(category)
                         },
                         onClean: { entity in
-                            viewModel.askRemoveDirectory(entiy: entity)
+                            viewModel.askRemoveDirectory(entity: entity)
                         },
                         onCleanAll: {
                             viewModel.askRemoveAllCaches()
@@ -43,7 +43,7 @@ struct CleanerHomeView: View {
                         .font(.body)
                         .foregroundStyle(.secondary)
                     Button("Grant Access", systemImage: "square.on.square") {
-                        viewModel.requesUserDirectoryAccess()
+                        viewModel.requestUserDirectoryAccess()
                     }
                     .padding(.top)
                 }

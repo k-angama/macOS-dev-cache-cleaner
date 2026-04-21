@@ -10,7 +10,7 @@ struct CleanupProgressViewModelTests {
         let viewModel = CleanupProgressViewModel(store: store)
         let currentDirectory = StorageSubCategoryEntity(
             path: "/Users/kangama/.pub-cache",
-            match: "",
+            rule: .allContents,
             size: 512
         )
 
@@ -58,7 +58,7 @@ struct CleanupProgressViewModelTests {
         store.update(
             currentDirectory: StorageSubCategoryEntity(
                 path: "/Users/kangama/Library/Caches",
-                match: "",
+                rule: .allContents,
                 size: 2_048
             ),
             deletedSize: 2_048,

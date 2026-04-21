@@ -8,13 +8,13 @@ struct RefreshStorageCategoryUseCaseTests {
     @Test func updatesEachSubcategorySize() async {
         let repository = DiskRepositoryMock()
         repository.setComputeResponses([1.25], for: "Library/Caches/A")
-        repository.setComputeResponses([2.75], for: "Library/Caches/B", match: "match")
+        repository.setComputeResponses([2.75], for: "Library/Caches/B", rule: .childNamePrefix("match"))
 
         let category = makeCategory(
             name: "Caches",
             subcategories: [
                 makeSubCategory(name: "Library/Caches/A"),
-                makeSubCategory(name: "Library/Caches/B", match: "match")
+                makeSubCategory(name: "Library/Caches/B", rule: .childNamePrefix("match"))
             ]
         )
 

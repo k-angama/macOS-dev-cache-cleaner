@@ -21,10 +21,10 @@ func makeCategory(
 
 func makeSubCategory(
     name: String,
-    match: String = "",
+    rule: StoragePathRule = .allContents,
     size: CGFloat = 0
 ) -> StorageSubCategoryEntity {
-    StorageSubCategoryEntity(path: name, match: match, size: size)
+    StorageSubCategoryEntity(path: name, rule: rule, size: size)
 }
 
 func collectEvents(

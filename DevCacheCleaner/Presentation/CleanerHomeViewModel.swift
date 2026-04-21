@@ -72,7 +72,7 @@ class CleanerHomeViewModel {
 
     // MARK: - Access
 
-    func requesUserDirectoryAccess() {
+    func requestUserDirectoryAccess() {
         isAlertErrorRequest = false
 
         if let url = requestHomeAccessUseCase.execute() {
@@ -99,12 +99,12 @@ class CleanerHomeViewModel {
 
     // MARK: - Cleanup Actions
 
-    func askRemoveDirectory(entiy: StorageCategoryEntity) {
+    func askRemoveDirectory(entity: StorageCategoryEntity) {
         guard isCleaning == false else {
             return
         }
         isAlertCleanCache = true
-        storageCategorySelected = entiy
+        storageCategorySelected = entity
     }
 
     func askRemoveAllCaches() {

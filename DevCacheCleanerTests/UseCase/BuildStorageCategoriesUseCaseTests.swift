@@ -10,9 +10,16 @@ struct BuildStorageCategoriesUseCaseTests {
         let flutterCategory = categories.first {
             $0.categories.contains(where: { $0.path == ".pub-cache" })
         }
+        let androidCategory = categories.first {
+            $0.name == "Android/Gradle Caches"
+        }
+        let androidStudioCache = androidCategory?.categories.first {
+            $0.path == "Library/Caches/Google"
+        }
 
         #expect(categories.count == Constants.Storages.items.count)
         #expect(flutterCategory != nil)
         #expect(flutterCategory?.categories.contains(where: { $0.path == ".pub-cache" }) == true)
+        #expect(androidStudioCache?.rule == .childNamePrefix("AndroidStudio"))
     }
 }

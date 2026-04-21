@@ -29,12 +29,12 @@ struct StorageUsageView: View {
         categories.sum({ $0.size })
     }
 
-    var systeme: CGFloat {
+    var system: CGFloat {
         (total - totalCategoriesSize) - free
     }
     
     var usedSpace: CGFloat {
-        systeme + categories.map(\.size).reduce(0, +)
+        system + categories.map(\.size).reduce(0, +)
     }
 
     func rowState(for category: StorageCategoryEntity) -> StorageCategoryRowState {
@@ -68,7 +68,7 @@ struct StorageUsageView: View {
                         HStack(spacing: 0) {
                             Rectangle()
                                 .fill(.gray.opacity(0.8))
-                                .frame(width: geo.size.width * (systeme / total), height: 24)
+                                .frame(width: geo.size.width * (system / total), height: 24)
                             ForEach(categories) { cat in
                                 Rectangle()
                                     .fill(cat.color)
@@ -88,7 +88,7 @@ struct StorageUsageView: View {
                             .font(.footnote)
                             .foregroundStyle(.primary)
                         Circle().fill(.gray.opacity(0.8)).frame(width: 10, height: 10)
-                        Text(systeme.byteCountString)
+                        Text(system.byteCountString)
                             .font(.footnote)
                             .foregroundStyle(.primary)
                     }

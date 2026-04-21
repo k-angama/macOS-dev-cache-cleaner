@@ -8,7 +8,7 @@ struct CleanerHomeViewModelTests {
     @Test func requestUserDirectoryAccess_whenGranted_marksAccessAndLoadsOverview() async {
         let context = makeSUT(requestedURL: testHomeURL, totalDiskCapacity: 500, availableDiskCapacity: 200)
 
-        context.viewModel.requesUserDirectoryAccess()
+        context.viewModel.requestUserDirectoryAccess()
 
         let didLoadOverview = await waitUntil {
             context.viewModel.isAccessUserDirectory &&
@@ -27,7 +27,7 @@ struct CleanerHomeViewModelTests {
     @Test func requestUserDirectoryAccess_whenDenied_showsErrorAlert() {
         let context = makeSUT()
 
-        context.viewModel.requesUserDirectoryAccess()
+        context.viewModel.requestUserDirectoryAccess()
 
         #expect(context.homeAccessRepository.requestCallCount == 1)
         #expect(context.viewModel.isAccessUserDirectory == false)
@@ -47,7 +47,7 @@ struct CleanerHomeViewModelTests {
         context.diskRepository.setCleanFileDeletionSteps([1.0, 1.5], for: ".pub-cache")
         context.viewModel.categories = [category]
 
-        context.viewModel.askRemoveDirectory(entiy: category)
+        context.viewModel.askRemoveDirectory(entity: category)
         let cleanupName = context.viewModel.startCleanup()
 
         let didFinishCleanup = await waitUntil(timeout: 2) {
@@ -62,7 +62,7 @@ struct CleanerHomeViewModelTests {
         #expect(context.viewModel.storageCategorySelected == nil)
         #expect(context.cleanupProgressStore.categoryName == "Flutter")
         #expect(context.diskRepository.cleanedPaths == [
-            context.diskRepository.key(path: ".pub-cache", match: "")
+            context.diskRepository.key(path: ".pub-cache")
         ])
     }
 
@@ -99,8 +99,8 @@ struct CleanerHomeViewModelTests {
         #expect(didFinishCleanup)
         #expect(context.viewModel.storageCategorySelected == nil)
         #expect(context.diskRepository.cleanedPaths == [
-            context.diskRepository.key(path: "Cache/A", match: ""),
-            context.diskRepository.key(path: "Cache/B", match: "")
+            context.diskRepository.key(path: "Cache/A"),
+            context.diskRepository.key(path: "Cache/B")
         ])
     }
 

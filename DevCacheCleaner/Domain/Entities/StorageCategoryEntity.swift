@@ -7,6 +7,20 @@
 
 import SwiftUI
 
+public enum StoragePathRule: Codable, Hashable {
+    case allContents
+    case childNamePrefix(String)
+
+    var displayDescription: String {
+        switch self {
+        case .allContents:
+            return "Cleans all contents"
+        case .childNamePrefix(let prefix):
+            return "Cleans child items matching: \(prefix)*"
+        }
+    }
+}
+
 struct StorageCategoryEntity: Identifiable, Codable, Hashable {
     var id: UUID = UUID()
     let name: String
@@ -41,14 +55,14 @@ struct StorageCategoryEntity: Identifiable, Codable, Hashable {
 struct StorageSubCategoryEntity: Identifiable, Codable, Hashable  {
     var id: UUID = UUID()
     let path: String
-    let match: String
+    let rule: StoragePathRule
     var size: CGFloat
     
     func updateSize(size: CGFloat) -> StorageSubCategoryEntity {
         StorageSubCategoryEntity(
             id: self.id,
             path: self.path,
-            match: self.match,
+            rule: self.rule,
             size: size
         )
     }

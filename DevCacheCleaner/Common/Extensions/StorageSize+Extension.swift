@@ -9,7 +9,7 @@ import Foundation
 
 extension BinaryInteger {
 
-    var toCGFlot: CGFloat {
+    var toCGFloat: CGFloat {
         CGFloat(self)
     }
 
