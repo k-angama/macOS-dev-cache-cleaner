@@ -163,6 +163,16 @@ struct CleanerHomeViewModelTests {
 
         #expect(context.viewModel.selectedCategoryForDetails == nil)
     }
+
+    @Test func selectWorkspace_updatesSelectedWorkspaceDisplayState() {
+        let context = makeSUT()
+        let workspaceURL = URL(filePath: "/Users/test/Projects/MyApp")
+
+        context.viewModel.selectWorkspace(url: workspaceURL)
+
+        #expect(context.viewModel.selectedWorkspaceName == "MyApp")
+        #expect(context.viewModel.selectedWorkspacePath == "/Users/test/Projects/MyApp")
+    }
 }
 
 @MainActor

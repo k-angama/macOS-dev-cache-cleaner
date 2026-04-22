@@ -7,9 +7,11 @@
 
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 
 struct CleanerHomeView: View {
     @State var viewModel: CleanerHomeViewModel
+    @State private var isWorkspaceImporterPresented = false
     @Environment(\.openWindow) var openWindow
     
     var body: some View {
@@ -31,6 +33,14 @@ struct CleanerHomeView: View {
                         },
                         onCleanAll: {
                             viewModel.askRemoveAllCaches()
+                        }
+                    )
+                    WorkspaceSelectionView(
+                        selectedWorkspaceName: viewModel.selectedWorkspaceName,
+                        selectedWorkspacePath: viewModel.selectedWorkspacePath,
+                        isSelectionEnabled: viewModel.isCleaning == false,
+                        onSelectWorkspace: {
+                            isWorkspaceImporterPresented = true
                         }
                     )
                 }
@@ -109,6 +119,18 @@ struct CleanerHomeView: View {
         ) { category in
             StorageCategoryDetailsView(category: category)
         }
+        .fileImporter(
+            isPresented: $isWorkspaceImporterPresented,
+            allowedContentTypes: [.folder],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                viewModel.selectWorkspace(url: urls.first)
+            case .failure(let error):
+                viewModel.failWorkspaceSelection(error: error)
+            }
+        }
 
     }
     
@@ -148,6 +170,7 @@ struct CleanerHomeView: View {
     viewModel.isAlertCleanCache = false
     viewModel.totalSize = 500
     viewModel.freeSize = 70
+    viewModel.selectWorkspace(url: URL(filePath: "/Users/kangama/Documents/Projets/Desktop/MacOS/app/DevCacheCleaner"))
     viewModel.categories = categories
     viewModel.categoryRowStates = [
         categories[1].id: .loading,

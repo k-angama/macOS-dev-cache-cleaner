@@ -29,6 +29,8 @@ class CleanerHomeViewModel {
     var storageCategorySelected: StorageCategoryEntity?
     var selectedCategoryForDetails: StorageCategoryEntity?
     var isCleaning: Bool = false
+    var selectedWorkspaceName: String?
+    var selectedWorkspacePath: String?
 
     // MARK: - Dependencies
 
@@ -95,6 +97,22 @@ class CleanerHomeViewModel {
         } else {
             isAccessUserDirectory = false
         }
+    }
+
+    // MARK: - Workspace Selection
+
+    func selectWorkspace(url: URL?) {
+        guard let url else {
+            return
+        }
+
+        selectedWorkspaceName = url.lastPathComponent
+        selectedWorkspacePath = url.path
+    }
+
+    func failWorkspaceSelection(error: Error) {
+        alertErrorMessage = error.localizedDescription
+        isAlertErrorRequest = true
     }
 
     // MARK: - Cleanup Actions
