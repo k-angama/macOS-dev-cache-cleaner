@@ -43,6 +43,9 @@ struct CleanerHomeView: View {
                         },
                         onOpenWorkspaceDetails: {
                             viewModel.selectWorkspaceForDetails()
+                        },
+                        onCleanWorkspace: {
+                            viewModel.askRemoveWorkspaceCaches()
                         }
                     )
                 }

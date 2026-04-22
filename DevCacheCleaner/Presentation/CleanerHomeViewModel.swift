@@ -56,6 +56,7 @@ class CleanerHomeViewModel {
     private let cleanupProgressStore: CleanupProgressStore
 
     private var selectedWorkspaceURL: URL?
+    private var isWorkspaceCleanupSelected = false
 
     // MARK: - Init
 
@@ -162,6 +163,7 @@ class CleanerHomeViewModel {
         }
         isAlertCleanCache = true
         storageCategorySelected = entity
+        isWorkspaceCleanupSelected = false
     }
 
     func askRemoveAllCaches() {
@@ -170,9 +172,29 @@ class CleanerHomeViewModel {
         }
         isAlertCleanCache = true
         storageCategorySelected = nil
+        isWorkspaceCleanupSelected = false
+    }
+
+    func askRemoveWorkspaceCaches() {
+        guard
+            isCleaning == false,
+            workspaceRowState == .ready,
+            let selectedWorkspaceCategory,
+            selectedWorkspaceCategory.size > 0.01
+        else {
+            return
+        }
+
+        isAlertCleanCache = true
+        storageCategorySelected = selectedWorkspaceCategory
+        isWorkspaceCleanupSelected = true
     }
 
     func startCleanup() -> String? {
+        if isWorkspaceCleanupSelected {
+            return startCleanupForWorkspace()
+        }
+
         if storageCategorySelected == nil {
             return startCleanupForAllCategories()
         }
@@ -239,6 +261,34 @@ class CleanerHomeViewModel {
         }
 
         return "All Caches"
+    }
+
+    func startCleanupForWorkspace() -> String? {
+        guard
+            isCleaning == false,
+            let selectedWorkspaceURL,
+            let selectedWorkspaceCategory,
+            selectedWorkspaceCategory.size > 0.01
+        else {
+            return nil
+        }
+
+        isCleaning = true
+        storageCategorySelected = selectedWorkspaceCategory
+        workspaceRowState = .deleting
+        cleanupProgressStore.start(
+            categoryName: selectedWorkspaceCategory.name,
+            totalSize: selectedWorkspaceCategory.categories.reduce(0) { $0 + $1.size }
+        )
+
+        Task { [weak self] in
+            await self?.performWorkspaceCleanup(
+                of: selectedWorkspaceCategory,
+                workspaceURL: selectedWorkspaceURL
+            )
+        }
+
+        return selectedWorkspaceCategory.name
     }
 
     // MARK: - Monitoring
@@ -422,11 +472,49 @@ class CleanerHomeViewModel {
         }
     }
 
+    @MainActor
+    private func performWorkspaceCleanup(of entity: StorageCategoryEntity, workspaceURL: URL) async {
+        var didFinish = false
+
+        for await event in cleanStorageCategoryUseCase.execute(homeURL: workspaceURL, category: entity) {
+            applyCleanupEvent(
+                event,
+                categoryID: entity.id,
+                onCategoryUpdated: { [weak self] updatedCategory in
+                    self?.selectedWorkspaceCategory = updatedCategory
+                }
+            )
+
+            if event.phase == .finished {
+                didFinish = true
+                storageCategorySelected = nil
+                isWorkspaceCleanupSelected = false
+                isCleaning = false
+                workspaceRowState = .ready
+
+                if event.failedDirectories.isEmpty == false {
+                    alertErrorMessage = "Some workspace directories could not be deleted."
+                    isAlertErrorRequest = true
+                }
+
+                await cleanupProgressStore.finish(isComplete: event.didCompleteFully)
+            }
+        }
+
+        if didFinish == false {
+            storageCategorySelected = nil
+            isWorkspaceCleanupSelected = false
+            isCleaning = false
+            workspaceRowState = .ready
+        }
+    }
+
     private func applyCleanupEvent(
         _ event: CleanStorageCategoryEventEntity,
         categoryID: UUID,
         deletedSizeOffset: CGFloat = 0,
-        totalProgressSize: CGFloat? = nil
+        totalProgressSize: CGFloat? = nil,
+        onCategoryUpdated: ((StorageCategoryEntity) -> Void)? = nil
     ) {
         let progressTotalSize = max(totalProgressSize ?? event.totalSize, 0)
         let progressDeletedSize = min(
@@ -442,7 +530,11 @@ class CleanerHomeViewModel {
         )
 
         if let updatedCategory = event.updatedCategory {
-            updateCategory(updatedCategory, for: categoryID)
+            if let onCategoryUpdated {
+                onCategoryUpdated(updatedCategory)
+            } else {
+                updateCategory(updatedCategory, for: categoryID)
+            }
         }
 
         if let totalDiskCapacity = event.totalDiskCapacity {

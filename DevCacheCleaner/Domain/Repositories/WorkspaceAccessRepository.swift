@@ -10,5 +10,4 @@ import Foundation
 protocol WorkspaceAccessRepository {
     func saveWorkspaceURL(_ url: URL) -> Bool
     func resolveWorkspaceURL() -> URL?
-    func clearWorkspaceURL()
 }

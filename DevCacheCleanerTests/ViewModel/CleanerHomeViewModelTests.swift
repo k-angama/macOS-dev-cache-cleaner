@@ -240,6 +240,41 @@ struct CleanerHomeViewModelTests {
         #expect(context.workspaceAccessRepository.resolveCallCount == 1)
         #expect(context.workspaceAccessRepository.saveCallCount == 0)
     }
+
+    @Test func startCleanup_forWorkspace_updatesWorkspaceCategoryAndResetsState() async {
+        let context = makeSUT(totalDiskCapacity: 500, availableDiskCapacity: 200)
+        let workspaceURL = URL(filePath: "/Users/test/Projects/MyApp")
+
+        context.scannerRepository.cleanupDirectories = ["node_modules"]
+        context.diskRepository.setComputeResponses([25, 25, 0], for: "node_modules")
+        context.diskRepository.setCleanFileDeletionSteps([25], for: "node_modules")
+
+        context.viewModel.selectWorkspace(url: workspaceURL)
+
+        let didLoadWorkspace = await waitUntil(timeout: 2) {
+            context.viewModel.workspaceRowState == .ready &&
+            abs((context.viewModel.selectedWorkspaceCategory?.size ?? 0) - 25) < 0.0001
+        }
+
+        context.viewModel.askRemoveWorkspaceCaches()
+        let cleanupName = context.viewModel.startCleanup()
+
+        let didFinishCleanup = await waitUntil(timeout: 2) {
+            context.viewModel.isCleaning == false &&
+            context.viewModel.workspaceRowState == .ready &&
+            abs((context.viewModel.selectedWorkspaceCategory?.size ?? -1) - 0) < 0.0001 &&
+            context.cleanupProgressStore.isFinished
+        }
+
+        #expect(didLoadWorkspace)
+        #expect(cleanupName == "Workspace: MyApp")
+        #expect(didFinishCleanup)
+        #expect(context.viewModel.storageCategorySelected == nil)
+        #expect(context.cleanupProgressStore.categoryName == "Workspace: MyApp")
+        #expect(context.diskRepository.cleanedPaths == [
+            context.diskRepository.key(path: "node_modules")
+        ])
+    }
 }
 
 @MainActor

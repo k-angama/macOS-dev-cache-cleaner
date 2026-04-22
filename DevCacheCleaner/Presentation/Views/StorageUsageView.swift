@@ -30,6 +30,7 @@ struct StorageUsageView: View {
     var onCleanAll: (() -> Void)? = nil
     var onSelectWorkspace: (() -> Void)? = nil
     var onOpenWorkspaceDetails: (() -> Void)? = nil
+    var onCleanWorkspace: (() -> Void)? = nil
     @State private var hoveredCategoryID: UUID?
 
     var totalCategoriesSize: CGFloat {
@@ -201,7 +202,10 @@ struct StorageUsageView: View {
                     selectedWorkspaceName: selectedWorkspaceName,
                     selectedWorkspacePath: selectedWorkspacePath,
                     workspaceSizeText: selectedWorkspaceCategory?.size.byteCountString ?? "0 KB",
-                    isCleanEnabled: false,
+                    isCleanEnabled: isCleaning == false
+                    && workspaceRowState == .ready
+                    && (selectedWorkspaceCategory?.size ?? 0) > 0.01
+                    && onCleanWorkspace != nil,
                     isSelectionEnabled: isWorkspaceSelectionEnabled,
                     state: workspaceRowState,
                     onSelectWorkspace: {
@@ -210,7 +214,9 @@ struct StorageUsageView: View {
                     onOpenDetails: {
                         onOpenWorkspaceDetails?()
                     },
-                    onClean: nil
+                    onClean: {
+                        onCleanWorkspace?()
+                    }
                 )
             }
             Divider()
@@ -278,6 +284,9 @@ struct StorageUsageView: View {
         },
         onOpenWorkspaceDetails: {
             print("Open workspace details")
+        },
+        onCleanWorkspace: {
+            print("Clean workspace")
         }
     )
     .padding()
