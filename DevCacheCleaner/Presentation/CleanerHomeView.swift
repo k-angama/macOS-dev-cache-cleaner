@@ -7,11 +7,10 @@
 
 import SwiftUI
 import AppKit
-import UniformTypeIdentifiers
 
 struct CleanerHomeView: View {
     @State var viewModel: CleanerHomeViewModel
-    @State private var isWorkspaceImporterPresented = false
+    @State private var isWorkspaceOpenPanelPresented = false
     @Environment(\.openWindow) var openWindow
     
     var body: some View {
@@ -40,7 +39,7 @@ struct CleanerHomeView: View {
                         selectedWorkspacePath: viewModel.selectedWorkspacePath,
                         isSelectionEnabled: viewModel.isCleaning == false,
                         onSelectWorkspace: {
-                            isWorkspaceImporterPresented = true
+                            isWorkspaceOpenPanelPresented = true
                         }
                     )
                 }
@@ -119,17 +118,13 @@ struct CleanerHomeView: View {
         ) { category in
             StorageCategoryDetailsView(category: category)
         }
-        .fileImporter(
-            isPresented: $isWorkspaceImporterPresented,
-            allowedContentTypes: [.folder],
-            allowsMultipleSelection: false
-        ) { result in
-            switch result {
-            case .success(let urls):
-                viewModel.selectWorkspace(url: urls.first)
-            case .failure(let error):
-                viewModel.failWorkspaceSelection(error: error)
-            }
+        .directoryOpenPanel(
+            isPresented: $isWorkspaceOpenPanelPresented,
+            title: "Select Workspace",
+            message: "Choose a workspace folder",
+            prompt: "Select Workspace"
+        ) { url in
+            viewModel.selectWorkspace(url: url)
         }
 
     }
