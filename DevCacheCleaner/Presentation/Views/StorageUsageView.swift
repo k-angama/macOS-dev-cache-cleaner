@@ -22,6 +22,8 @@ struct StorageUsageView: View {
     let isCleaning: Bool
     var selectedWorkspaceName: String? = nil
     var selectedWorkspacePath: String? = nil
+    var selectedWorkspaceCategory: StorageCategoryEntity? = nil
+    var workspaceRowState: StorageCategoryRowState = .ready
     var isWorkspaceSelectionEnabled: Bool = true
     var onOpenDetails: ((StorageCategoryEntity) -> Void)? = nil
     var onClean: ((StorageCategoryEntity) -> Void)? = nil
@@ -198,9 +200,10 @@ struct StorageUsageView: View {
                 WorkspaceSelectionView(
                     selectedWorkspaceName: selectedWorkspaceName,
                     selectedWorkspacePath: selectedWorkspacePath,
-                    workspaceSizeText: "Size pending",
+                    workspaceSizeText: selectedWorkspaceCategory?.size.byteCountString ?? "0 KB",
                     isCleanEnabled: false,
                     isSelectionEnabled: isWorkspaceSelectionEnabled,
+                    state: workspaceRowState,
                     onSelectWorkspace: {
                         onSelectWorkspace?()
                     },
@@ -254,6 +257,13 @@ struct StorageUsageView: View {
         isCleaning: false,
         selectedWorkspaceName: "DevCacheCleaner",
         selectedWorkspacePath: "/Users/kangama/Documents/Projets/Desktop/MacOS/app/DevCacheCleaner",
+        selectedWorkspaceCategory: .init(
+            name: "Workspace: DevCacheCleaner",
+            color: .teal,
+            size: 17.6,
+            categories: []
+        ),
+        workspaceRowState: .ready,
         onOpenDetails: { cat in
             print("Open details for: \(cat.name)")
         },

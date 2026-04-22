@@ -17,6 +17,10 @@ class AppContainer {
         manager: DiskManagerImpl()
     )
 
+    private lazy var diskScannerRepository: DiskScannerRepository = DiskScannerRepositoryImpl(
+        manager: DiskScannerManager()
+    )
+
     private lazy var diskMonitoringRepository: DiskMonitoringRepository = DiskMonitoringRepositoryImpl(
         manager: DiskMonitorManagerImpl()
     )
@@ -41,6 +45,11 @@ class AppContainer {
         diskRepository: diskRepository,
         buildStorageCategoriesUseCase: buildStorageCategoriesUseCase,
         refreshStorageCategoryUseCase: refreshStorageCategoryUseCase
+    )
+
+    private lazy var loadWorkspaceCleanupCategoryUseCase = LoadWorkspaceCleanupCategoryUseCase(
+        diskRepository: diskRepository,
+        diskScannerRepository: diskScannerRepository
     )
 
     private lazy var readDiskSpaceUseCase = ReadDiskSpaceUseCase(
@@ -82,6 +91,7 @@ class AppContainer {
         cleanAllStorageCategoriesUseCase: cleanAllStorageCategoriesUseCase,
         refreshStorageCategoryUseCase: refreshStorageCategoryUseCase,
         loadStorageOverviewUseCase: loadStorageOverviewUseCase,
+        loadWorkspaceCleanupCategoryUseCase: loadWorkspaceCleanupCategoryUseCase,
         readDiskSpaceUseCase: readDiskSpaceUseCase,
         cleanupProgressStore: cleanupProgressStore
     )

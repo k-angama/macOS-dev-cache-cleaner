@@ -31,6 +31,13 @@ class CleanerHomeViewModel {
     var isCleaning: Bool = false
     var selectedWorkspaceName: String?
     var selectedWorkspacePath: String?
+    var selectedWorkspaceCategory: StorageCategoryEntity? {
+        didSet {
+            syncSelectedWorkspaceCategoryForDetails()
+        }
+    }
+    var selectedWorkspaceCategoryForDetails: StorageCategoryEntity?
+    var workspaceRowState: StorageCategoryRowState = .ready
 
     // MARK: - Dependencies
 
@@ -42,8 +49,11 @@ class CleanerHomeViewModel {
     private let cleanAllStorageCategoriesUseCase: CleanAllStorageCategoriesUseCase
     private let refreshStorageCategoryUseCase: RefreshStorageCategoryUseCase
     private let loadStorageOverviewUseCase: LoadStorageOverviewUseCase
+    private let loadWorkspaceCleanupCategoryUseCase: LoadWorkspaceCleanupCategoryUseCase
     private let readDiskSpaceUseCase: ReadDiskSpaceUseCase
     private let cleanupProgressStore: CleanupProgressStore
+
+    private var selectedWorkspaceURL: URL?
 
     // MARK: - Init
 
@@ -56,6 +66,7 @@ class CleanerHomeViewModel {
         cleanAllStorageCategoriesUseCase: CleanAllStorageCategoriesUseCase,
         refreshStorageCategoryUseCase: RefreshStorageCategoryUseCase,
         loadStorageOverviewUseCase: LoadStorageOverviewUseCase,
+        loadWorkspaceCleanupCategoryUseCase: LoadWorkspaceCleanupCategoryUseCase,
         readDiskSpaceUseCase: ReadDiskSpaceUseCase,
         cleanupProgressStore: CleanupProgressStore
     ) {
@@ -67,6 +78,7 @@ class CleanerHomeViewModel {
         self.cleanAllStorageCategoriesUseCase = cleanAllStorageCategoriesUseCase
         self.refreshStorageCategoryUseCase = refreshStorageCategoryUseCase
         self.loadStorageOverviewUseCase = loadStorageOverviewUseCase
+        self.loadWorkspaceCleanupCategoryUseCase = loadWorkspaceCleanupCategoryUseCase
         self.readDiskSpaceUseCase = readDiskSpaceUseCase
         self.cleanupProgressStore = cleanupProgressStore
         setup()
@@ -108,6 +120,18 @@ class CleanerHomeViewModel {
 
         selectedWorkspaceName = url.lastPathComponent
         selectedWorkspacePath = url.path
+        selectedWorkspaceURL = url
+        selectedWorkspaceCategory = StorageCategoryEntity(
+            name: "Workspace: \(url.lastPathComponent)",
+            color: .teal,
+            size: 0,
+            categories: []
+        )
+        workspaceRowState = .loading
+
+        Task { [weak self] in
+            await self?.loadWorkspaceCleanupCategory(workspaceURL: url)
+        }
     }
 
     func failWorkspaceSelection(error: Error) {
@@ -227,6 +251,14 @@ class CleanerHomeViewModel {
         selectedCategoryForDetails = nil
     }
 
+    func selectWorkspaceForDetails() {
+        selectedWorkspaceCategoryForDetails = selectedWorkspaceCategory
+    }
+
+    func clearSelectedWorkspaceCategoryForDetails() {
+        selectedWorkspaceCategoryForDetails = nil
+    }
+
     // MARK: - Setup
 
     private func setup() {
@@ -260,6 +292,20 @@ class CleanerHomeViewModel {
         case .finished:
             setAllCategoryRowStates(.ready)
         }
+    }
+
+    @MainActor
+    private func loadWorkspaceCleanupCategory(workspaceURL: URL) async {
+        let category = await loadWorkspaceCleanupCategoryUseCase.execute(
+            workspaceURL: workspaceURL
+        )
+
+        guard selectedWorkspaceURL?.path == workspaceURL.path else {
+            return
+        }
+
+        selectedWorkspaceCategory = category
+        workspaceRowState = .ready
     }
 
     private func updateDiskSpace() {
@@ -454,5 +500,13 @@ class CleanerHomeViewModel {
         self.selectedCategoryForDetails = categories.first {
             $0.name == selectedCategoryForDetails.name
         }
+    }
+
+    private func syncSelectedWorkspaceCategoryForDetails() {
+        guard selectedWorkspaceCategoryForDetails != nil else {
+            return
+        }
+
+        selectedWorkspaceCategoryForDetails = selectedWorkspaceCategory
     }
 }

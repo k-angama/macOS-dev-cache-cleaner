@@ -13,6 +13,7 @@ struct WorkspaceSelectionView: View {
     let workspaceSizeText: String
     let isCleanEnabled: Bool
     let isSelectionEnabled: Bool
+    let state: StorageCategoryRowState
     let onSelectWorkspace: () -> Void
     let onOpenDetails: (() -> Void)?
     let onClean: (() -> Void)?
@@ -31,11 +32,7 @@ struct WorkspaceSelectionView: View {
             Spacer(minLength: 12)
 
             if hasSelectedWorkspace {
-                Text(workspaceSizeText)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .frame(minWidth: 82, alignment: .trailing)
+                workspaceStateView
 
                 Button {
                     onClean?()
@@ -51,6 +48,35 @@ struct WorkspaceSelectionView: View {
                 .disabled(isSelectionEnabled == false)
             }
         }
+    }
+
+    private var workspaceStateView: some View {
+        Group {
+            switch state {
+            case .ready:
+                Text(workspaceSizeText)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            case .loading:
+                HStack(spacing: 3) {
+                    Text("Scanning...")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    ProgressView()
+                        .scaleEffect(0.4)
+                }
+            case .deleting:
+                HStack(spacing: 3) {
+                    Text("Deleting...")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    ProgressView()
+                        .scaleEffect(0.4)
+                }
+            }
+        }
+        .frame(minWidth: 82, alignment: .trailing)
     }
 
     private var workspaceInfoButton: some View {
@@ -144,6 +170,7 @@ struct WorkspaceSelectionView: View {
             workspaceSizeText: "Size pending",
             isCleanEnabled: false,
             isSelectionEnabled: true,
+            state: .ready,
             onSelectWorkspace: {},
             onOpenDetails: nil,
             onClean: nil
@@ -155,6 +182,7 @@ struct WorkspaceSelectionView: View {
             workspaceSizeText: "Size pending",
             isCleanEnabled: false,
             isSelectionEnabled: true,
+            state: .loading,
             onSelectWorkspace: {},
             onOpenDetails: {},
             onClean: {}

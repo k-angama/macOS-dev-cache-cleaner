@@ -173,6 +173,52 @@ struct CleanerHomeViewModelTests {
         #expect(context.viewModel.selectedWorkspaceName == "MyApp")
         #expect(context.viewModel.selectedWorkspacePath == "/Users/test/Projects/MyApp")
     }
+
+    @Test func selectWorkspace_loadsWorkspaceCleanupCategoryAndDetails() async throws {
+        let context = makeSUT()
+        let workspaceURL = URL(filePath: "/Users/test/Projects/MyApp")
+
+        context.scannerRepository.cleanupDirectories = ["node_modules"]
+        context.diskRepository.setComputeResponses([25], for: "node_modules")
+
+        context.viewModel.selectWorkspace(url: workspaceURL)
+
+        let didLoadWorkspace = await waitUntil(timeout: 2) {
+            context.viewModel.workspaceRowState == .ready &&
+            context.viewModel.selectedWorkspaceCategory?.categories.map(\.path) == ["node_modules"]
+        }
+
+        context.viewModel.selectWorkspaceForDetails()
+
+        #expect(didLoadWorkspace)
+        #expect(context.viewModel.selectedWorkspaceCategory?.name == "Workspace: MyApp")
+        #expect(abs((context.viewModel.selectedWorkspaceCategory?.size ?? 0) - 25) < 0.0001)
+        #expect(context.viewModel.selectedWorkspaceCategoryForDetails?.categories.map(\.path) == ["node_modules"])
+    }
+
+    @Test func selectWorkspace_keepsWorkspaceRowLoadingWhileScannerRuns() async {
+        let context = makeSUT()
+        let workspaceURL = URL(filePath: "/Users/test/Projects/MyApp")
+
+        context.scannerRepository.cleanupDirectoryDelayNanoseconds = 100_000_000
+        context.scannerRepository.cleanupDirectories = ["node_modules"]
+        context.diskRepository.setComputeResponses([25], for: "node_modules")
+
+        context.viewModel.selectWorkspace(url: workspaceURL)
+
+        #expect(context.viewModel.workspaceRowState == .loading)
+
+        try? await Task.sleep(nanoseconds: 20_000_000)
+
+        #expect(context.viewModel.workspaceRowState == .loading)
+
+        let didLoadWorkspace = await waitUntil(timeout: 2) {
+            context.viewModel.workspaceRowState == .ready &&
+            context.viewModel.selectedWorkspaceCategory?.categories.map(\.path) == ["node_modules"]
+        }
+
+        #expect(didLoadWorkspace)
+    }
 }
 
 @MainActor
@@ -184,6 +230,7 @@ private func makeSUT(
 ) -> (
     viewModel: CleanerHomeViewModel,
     diskRepository: DiskRepositoryMock,
+    scannerRepository: DiskScannerRepositoryMock,
     homeAccessRepository: HomeAccessRepositoryMock,
     monitoringRepository: DiskMonitoringRepositoryMock,
     cleanupProgressStore: CleanupProgressStore
@@ -191,6 +238,8 @@ private func makeSUT(
     let diskRepository = DiskRepositoryMock()
     diskRepository.totalDiskCapacity = totalDiskCapacity
     diskRepository.availableDiskCapacity = availableDiskCapacity
+
+    let scannerRepository = DiskScannerRepositoryMock()
 
     let homeAccessRepository = HomeAccessRepositoryMock()
     homeAccessRepository.requestedURL = requestedURL
@@ -215,6 +264,10 @@ private func makeSUT(
         buildStorageCategoriesUseCase: buildStorageCategoriesUseCase,
         refreshStorageCategoryUseCase: refreshStorageCategoryUseCase
     )
+    let loadWorkspaceCleanupCategoryUseCase = LoadWorkspaceCleanupCategoryUseCase(
+        diskRepository: diskRepository,
+        diskScannerRepository: scannerRepository
+    )
     let readDiskSpaceUseCase = ReadDiskSpaceUseCase(diskRepository: diskRepository)
 
     let viewModel = CleanerHomeViewModel(
@@ -226,6 +279,7 @@ private func makeSUT(
         cleanAllStorageCategoriesUseCase: cleanAllStorageCategoriesUseCase,
         refreshStorageCategoryUseCase: refreshStorageCategoryUseCase,
         loadStorageOverviewUseCase: loadStorageOverviewUseCase,
+        loadWorkspaceCleanupCategoryUseCase: loadWorkspaceCleanupCategoryUseCase,
         readDiskSpaceUseCase: readDiskSpaceUseCase,
         cleanupProgressStore: cleanupProgressStore
     )
@@ -233,6 +287,7 @@ private func makeSUT(
     return (
         viewModel: viewModel,
         diskRepository: diskRepository,
+        scannerRepository: scannerRepository,
         homeAccessRepository: homeAccessRepository,
         monitoringRepository: monitoringRepository,
         cleanupProgressStore: cleanupProgressStore

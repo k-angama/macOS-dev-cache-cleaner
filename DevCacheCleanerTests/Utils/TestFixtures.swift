@@ -57,3 +57,28 @@ func waitUntil(
 
     return condition()
 }
+
+func makeTemporaryWorkspaceURL() throws -> URL {
+    let url = FileManager.default.temporaryDirectory
+        .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+    try FileManager.default.createDirectory(
+        at: url,
+        withIntermediateDirectories: true
+    )
+    return url
+}
+
+func createDirectory(at url: URL) throws {
+    try FileManager.default.createDirectory(
+        at: url,
+        withIntermediateDirectories: true
+    )
+}
+
+func writeEmptyFile(at url: URL) throws {
+    try FileManager.default.createDirectory(
+        at: url.deletingLastPathComponent(),
+        withIntermediateDirectories: true
+    )
+    try Data().write(to: url)
+}
