@@ -74,9 +74,11 @@ struct WorkspaceSelectionView: View {
             Text("Workspace cleanup")
                 .font(.headline)
 
-            Text("DevCacheCleaner uses the selected workspace to find generated dependency folders, such as node_modules and Pods.")
+            Text("Workspace cleanup looks inside the selected project folder for generated dependency directories.")
 
-            Text("Cleaning the workspace removes generated files that can be rebuilt by your package manager. Source files and project files are not part of workspace cleanup.")
+            Text("Examples include node_modules for JavaScript projects and Pods for CocoaPods projects.")
+
+            Text("Only generated folders are intended to be cleaned. Your source files, project files, and configuration files stay outside this cleanup.")
         }
         .font(.subheadline)
         .foregroundStyle(.primary)

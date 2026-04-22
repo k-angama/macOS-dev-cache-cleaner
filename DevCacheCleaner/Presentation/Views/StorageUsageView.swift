@@ -27,6 +27,7 @@ struct StorageUsageView: View {
     var onClean: ((StorageCategoryEntity) -> Void)? = nil
     var onCleanAll: (() -> Void)? = nil
     var onSelectWorkspace: (() -> Void)? = nil
+    var onOpenWorkspaceDetails: (() -> Void)? = nil
     @State private var hoveredCategoryID: UUID?
 
     var totalCategoriesSize: CGFloat {
@@ -203,7 +204,9 @@ struct StorageUsageView: View {
                     onSelectWorkspace: {
                         onSelectWorkspace?()
                     },
-                    onOpenDetails: nil,
+                    onOpenDetails: {
+                        onOpenWorkspaceDetails?()
+                    },
                     onClean: nil
                 )
             }
@@ -262,6 +265,9 @@ struct StorageUsageView: View {
         },
         onSelectWorkspace: {
             print("Select workspace tapped")
+        },
+        onOpenWorkspaceDetails: {
+            print("Open workspace details")
         }
     )
     .padding()

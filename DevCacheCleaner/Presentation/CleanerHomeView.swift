@@ -11,6 +11,7 @@ import AppKit
 struct CleanerHomeView: View {
     @State var viewModel: CleanerHomeViewModel
     @State private var isWorkspaceOpenPanelPresented = false
+    @State private var selectedWorkspaceCategoryForDetails: StorageCategoryEntity?
     @Environment(\.openWindow) var openWindow
     
     var body: some View {
@@ -38,6 +39,9 @@ struct CleanerHomeView: View {
                         },
                         onSelectWorkspace: {
                             isWorkspaceOpenPanelPresented = true
+                        },
+                        onOpenWorkspaceDetails: {
+                            selectedWorkspaceCategoryForDetails = workspaceDetailsCategory()
                         }
                     )
                 }
@@ -116,6 +120,11 @@ struct CleanerHomeView: View {
         ) { category in
             StorageCategoryDetailsView(category: category)
         }
+        .floatingPanel(
+            of: $selectedWorkspaceCategoryForDetails
+        ) { category in
+            StorageCategoryDetailsView(category: category)
+        }
         .directoryOpenPanel(
             isPresented: $isWorkspaceOpenPanelPresented,
             title: "Select Workspace",
@@ -134,6 +143,30 @@ struct CleanerHomeView: View {
                 value: categoryName
             )
         }
+    }
+
+    func workspaceDetailsCategory() -> StorageCategoryEntity? {
+        guard let workspaceName = viewModel.selectedWorkspaceName else {
+            return nil
+        }
+
+        return StorageCategoryEntity(
+            name: "Workspace: \(workspaceName)",
+            color: .teal,
+            size: 0,
+            categories: [
+                StorageSubCategoryEntity(
+                    path: "node_modules",
+                    rule: .allContents,
+                    size: 0
+                ),
+                StorageSubCategoryEntity(
+                    path: "Pods",
+                    rule: .allContents,
+                    size: 0
+                )
+            ]
+        )
     }
 }
 
