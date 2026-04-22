@@ -120,14 +120,13 @@ class DiskScannerManager {
         to targets: inout Set<String>
     ) {
         for rule in rules {
-            let markerURL = projectURL.appending(path: rule.markerFileName)
             let generatedDirectoryURL = projectURL.appending(
                 path: rule.generatedDirectoryName,
                 directoryHint: .isDirectory
             )
 
             guard
-                FileManager.default.fileExists(atPath: markerURL.path),
+                hasMarkerFile(for: rule, in: projectURL),
                 isDirectory(generatedDirectoryURL),
                 let path = relativePath(from: workspaceURL, to: generatedDirectoryURL)
             else {
@@ -135,6 +134,12 @@ class DiskScannerManager {
             }
 
             targets.insert(path)
+        }
+    }
+
+    private func hasMarkerFile(for rule: WorkspaceCleanupRuleEntity, in projectURL: URL) -> Bool {
+        rule.markerFileNames.contains { markerFileName in
+            FileManager.default.fileExists(atPath: projectURL.appending(path: markerFileName).path)
         }
     }
 
