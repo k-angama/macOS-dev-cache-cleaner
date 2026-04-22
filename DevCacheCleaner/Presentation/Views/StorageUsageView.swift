@@ -20,9 +20,13 @@ struct StorageUsageView: View {
     let categories: [StorageCategoryEntity]
     let rowStates: [UUID: StorageCategoryRowState]
     let isCleaning: Bool
+    var selectedWorkspaceName: String? = nil
+    var selectedWorkspacePath: String? = nil
+    var isWorkspaceSelectionEnabled: Bool = true
     var onOpenDetails: ((StorageCategoryEntity) -> Void)? = nil
     var onClean: ((StorageCategoryEntity) -> Void)? = nil
     var onCleanAll: (() -> Void)? = nil
+    var onSelectWorkspace: (() -> Void)? = nil
     @State private var hoveredCategoryID: UUID?
 
     var totalCategoriesSize: CGFloat {
@@ -187,6 +191,21 @@ struct StorageUsageView: View {
                         .animation(.easeInOut(duration: 0.2), value: state)
                     }
                 }
+                
+                Divider()
+
+                WorkspaceSelectionView(
+                    selectedWorkspaceName: selectedWorkspaceName,
+                    selectedWorkspacePath: selectedWorkspacePath,
+                    workspaceSizeText: "Size pending",
+                    isCleanEnabled: false,
+                    isSelectionEnabled: isWorkspaceSelectionEnabled,
+                    onSelectWorkspace: {
+                        onSelectWorkspace?()
+                    },
+                    onOpenDetails: nil,
+                    onClean: nil
+                )
             }
             Divider()
             HStack {
@@ -230,6 +249,8 @@ struct StorageUsageView: View {
             categories[6].id: .deleting
         ],
         isCleaning: false,
+        selectedWorkspaceName: "DevCacheCleaner",
+        selectedWorkspacePath: "/Users/kangama/Documents/Projets/Desktop/MacOS/app/DevCacheCleaner",
         onOpenDetails: { cat in
             print("Open details for: \(cat.name)")
         },
@@ -238,6 +259,9 @@ struct StorageUsageView: View {
         },
         onCleanAll: {
             print("Clean All tapped")
+        },
+        onSelectWorkspace: {
+            print("Select workspace tapped")
         }
     )
     .padding()

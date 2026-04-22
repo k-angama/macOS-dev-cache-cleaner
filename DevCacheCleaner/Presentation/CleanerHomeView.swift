@@ -24,6 +24,9 @@ struct CleanerHomeView: View {
                         categories: viewModel.categories,
                         rowStates: viewModel.categoryRowStates,
                         isCleaning: viewModel.isCleaning,
+                        selectedWorkspaceName: viewModel.selectedWorkspaceName,
+                        selectedWorkspacePath: viewModel.selectedWorkspacePath,
+                        isWorkspaceSelectionEnabled: viewModel.isCleaning == false,
                         onOpenDetails: { category in
                             viewModel.selectCategoryForDetails(category)
                         },
@@ -32,12 +35,7 @@ struct CleanerHomeView: View {
                         },
                         onCleanAll: {
                             viewModel.askRemoveAllCaches()
-                        }
-                    )
-                    WorkspaceSelectionView(
-                        selectedWorkspaceName: viewModel.selectedWorkspaceName,
-                        selectedWorkspacePath: viewModel.selectedWorkspacePath,
-                        isSelectionEnabled: viewModel.isCleaning == false,
+                        },
                         onSelectWorkspace: {
                             isWorkspaceOpenPanelPresented = true
                         }
