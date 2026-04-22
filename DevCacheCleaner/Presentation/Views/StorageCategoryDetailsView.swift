@@ -101,11 +101,13 @@ struct StorageCategoryDetailsView: View {
                     .background(.thinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             } else {
-                VStack(spacing: 8) {
-                    ForEach(sortedSubcategories) { subcategory in
-                        PathRowView(subcategory: subcategory)
+                ScrollView {
+                    VStack(spacing: 8) {
+                        ForEach(sortedSubcategories) { subcategory in
+                            PathRowView(subcategory: subcategory)
+                        }
                     }
-                }
+                }.frame(maxHeight: 500)
             }
         }
         .padding(14)
