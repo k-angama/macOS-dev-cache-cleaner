@@ -25,8 +25,14 @@ class AppContainer {
         manager: DiskMonitorManagerImpl()
     )
 
+    private lazy var directoryAccessManager = DirectoryAccessManager(params: parameters)
+
     private lazy var homeAccessRepository: HomeAccessRepository = HomeAccessRepositoryImpl(
-        manager: HomeAccessManager(params: parameters)
+        manager: directoryAccessManager
+    )
+
+    private lazy var workspaceAccessRepository: WorkspaceAccessRepository = WorkspaceAccessRepositoryImpl(
+        manager: directoryAccessManager
     )
 
     // MARK: - Stores
@@ -76,6 +82,14 @@ class AppContainer {
         homeAccessRepository: homeAccessRepository
     )
 
+    private lazy var saveWorkspaceAccessUseCase = SaveWorkspaceAccessUseCase(
+        workspaceAccessRepository: workspaceAccessRepository
+    )
+
+    private lazy var resolveWorkspaceAccessUseCase = ResolveWorkspaceAccessUseCase(
+        workspaceAccessRepository: workspaceAccessRepository
+    )
+
     // MARK: - ViewModels
 
     lazy var cleanupProgressViewModel = CleanupProgressViewModel(
@@ -92,6 +106,8 @@ class AppContainer {
         refreshStorageCategoryUseCase: refreshStorageCategoryUseCase,
         loadStorageOverviewUseCase: loadStorageOverviewUseCase,
         loadWorkspaceCleanupCategoryUseCase: loadWorkspaceCleanupCategoryUseCase,
+        saveWorkspaceAccessUseCase: saveWorkspaceAccessUseCase,
+        resolveWorkspaceAccessUseCase: resolveWorkspaceAccessUseCase,
         readDiskSpaceUseCase: readDiskSpaceUseCase,
         cleanupProgressStore: cleanupProgressStore
     )

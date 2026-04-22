@@ -50,6 +50,8 @@ class CleanerHomeViewModel {
     private let refreshStorageCategoryUseCase: RefreshStorageCategoryUseCase
     private let loadStorageOverviewUseCase: LoadStorageOverviewUseCase
     private let loadWorkspaceCleanupCategoryUseCase: LoadWorkspaceCleanupCategoryUseCase
+    private let saveWorkspaceAccessUseCase: SaveWorkspaceAccessUseCase
+    private let resolveWorkspaceAccessUseCase: ResolveWorkspaceAccessUseCase
     private let readDiskSpaceUseCase: ReadDiskSpaceUseCase
     private let cleanupProgressStore: CleanupProgressStore
 
@@ -67,6 +69,8 @@ class CleanerHomeViewModel {
         refreshStorageCategoryUseCase: RefreshStorageCategoryUseCase,
         loadStorageOverviewUseCase: LoadStorageOverviewUseCase,
         loadWorkspaceCleanupCategoryUseCase: LoadWorkspaceCleanupCategoryUseCase,
+        saveWorkspaceAccessUseCase: SaveWorkspaceAccessUseCase,
+        resolveWorkspaceAccessUseCase: ResolveWorkspaceAccessUseCase,
         readDiskSpaceUseCase: ReadDiskSpaceUseCase,
         cleanupProgressStore: CleanupProgressStore
     ) {
@@ -79,6 +83,8 @@ class CleanerHomeViewModel {
         self.refreshStorageCategoryUseCase = refreshStorageCategoryUseCase
         self.loadStorageOverviewUseCase = loadStorageOverviewUseCase
         self.loadWorkspaceCleanupCategoryUseCase = loadWorkspaceCleanupCategoryUseCase
+        self.saveWorkspaceAccessUseCase = saveWorkspaceAccessUseCase
+        self.resolveWorkspaceAccessUseCase = resolveWorkspaceAccessUseCase
         self.readDiskSpaceUseCase = readDiskSpaceUseCase
         self.cleanupProgressStore = cleanupProgressStore
         setup()
@@ -118,6 +124,15 @@ class CleanerHomeViewModel {
             return
         }
 
+        if saveWorkspaceAccessUseCase.execute(url: url) == false {
+            alertErrorMessage = "Unable to save workspace access."
+            isAlertErrorRequest = true
+        }
+
+        loadSelectedWorkspace(url)
+    }
+
+    private func loadSelectedWorkspace(_ url: URL) {
         selectedWorkspaceName = url.lastPathComponent
         selectedWorkspacePath = url.path
         selectedWorkspaceURL = url
@@ -265,6 +280,7 @@ class CleanerHomeViewModel {
         categories = buildStorageCategoriesUseCase.execute()
         categoryRowStates.removeAll()
         resolveHomeURL()
+        resolveWorkspaceURL()
         updateDiskSpace()
     }
 
@@ -306,6 +322,14 @@ class CleanerHomeViewModel {
 
         selectedWorkspaceCategory = category
         workspaceRowState = .ready
+    }
+
+    private func resolveWorkspaceURL() {
+        guard let workspaceURL = resolveWorkspaceAccessUseCase.execute() else {
+            return
+        }
+
+        loadSelectedWorkspace(workspaceURL)
     }
 
     private func updateDiskSpace() {

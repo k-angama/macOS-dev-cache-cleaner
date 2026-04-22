@@ -8,9 +8,9 @@
 import Foundation
 
 struct HomeAccessRepositoryImpl: HomeAccessRepository {
-    private let manager: HomeAccessManager
+    private let manager: DirectoryAccessManaging
 
-    init(manager: HomeAccessManager) {
+    init(manager: DirectoryAccessManaging) {
         self.manager = manager
     }
 

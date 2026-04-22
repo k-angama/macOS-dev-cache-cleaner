@@ -33,6 +33,7 @@ fileprivate struct DirectoryOpenPanelModifier: ViewModifier {
 
     @MainActor
     private func showOpenPanel() {
+        isPresented = false
 
         let panel = NSOpenPanel()
         panel.title = title
@@ -44,16 +45,12 @@ fileprivate struct DirectoryOpenPanelModifier: ViewModifier {
         panel.allowsMultipleSelection = false
         panel.resolvesAliases = true
 
-        panel.begin { response in
-            isPresented = false
-
-            guard response == .OK, let url = panel.url else {
-                onCancellation()
-                return
-            }
-
-            onSelection(url)
+        guard panel.runModal() == .OK, let url = panel.url else {
+            onCancellation()
+            return
         }
+
+        onSelection(url)
     }
 }
 

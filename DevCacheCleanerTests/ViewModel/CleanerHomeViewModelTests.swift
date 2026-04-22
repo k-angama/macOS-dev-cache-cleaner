@@ -172,6 +172,7 @@ struct CleanerHomeViewModelTests {
 
         #expect(context.viewModel.selectedWorkspaceName == "MyApp")
         #expect(context.viewModel.selectedWorkspacePath == "/Users/test/Projects/MyApp")
+        #expect(context.workspaceAccessRepository.savedURL == workspaceURL)
     }
 
     @Test func selectWorkspace_loadsWorkspaceCleanupCategoryAndDetails() async throws {
@@ -219,18 +220,42 @@ struct CleanerHomeViewModelTests {
 
         #expect(didLoadWorkspace)
     }
+
+    @Test func resolveWorkspaceAccess_whenAvailableRestoresSelectedWorkspace() async {
+        let workspaceURL = URL(filePath: "/Users/test/Projects/MyApp")
+        let context = makeSUT(
+            resolvedWorkspaceURL: workspaceURL,
+            workspaceCleanupDirectories: ["node_modules"],
+            workspaceDirectorySizes: ["node_modules": 25]
+        )
+
+        let didLoadWorkspace = await waitUntil(timeout: 2) {
+            context.viewModel.workspaceRowState == .ready &&
+            context.viewModel.selectedWorkspaceCategory?.categories.map(\.path) == ["node_modules"]
+        }
+
+        #expect(didLoadWorkspace)
+        #expect(context.viewModel.selectedWorkspaceName == "MyApp")
+        #expect(context.viewModel.selectedWorkspacePath == "/Users/test/Projects/MyApp")
+        #expect(context.workspaceAccessRepository.resolveCallCount == 1)
+        #expect(context.workspaceAccessRepository.saveCallCount == 0)
+    }
 }
 
 @MainActor
 private func makeSUT(
     requestedURL: URL? = nil,
     resolvedURL: URL? = nil,
+    resolvedWorkspaceURL: URL? = nil,
+    workspaceCleanupDirectories: [String] = [],
+    workspaceDirectorySizes: [String: CGFloat] = [:],
     totalDiskCapacity: CGFloat = 0,
     availableDiskCapacity: CGFloat = 0
 ) -> (
     viewModel: CleanerHomeViewModel,
     diskRepository: DiskRepositoryMock,
     scannerRepository: DiskScannerRepositoryMock,
+    workspaceAccessRepository: WorkspaceAccessRepositoryMock,
     homeAccessRepository: HomeAccessRepositoryMock,
     monitoringRepository: DiskMonitoringRepositoryMock,
     cleanupProgressStore: CleanupProgressStore
@@ -240,6 +265,14 @@ private func makeSUT(
     diskRepository.availableDiskCapacity = availableDiskCapacity
 
     let scannerRepository = DiskScannerRepositoryMock()
+    scannerRepository.cleanupDirectories = workspaceCleanupDirectories
+
+    for (path, size) in workspaceDirectorySizes {
+        diskRepository.setComputeResponses([size], for: path)
+    }
+
+    let workspaceAccessRepository = WorkspaceAccessRepositoryMock()
+    workspaceAccessRepository.resolvedURL = resolvedWorkspaceURL
 
     let homeAccessRepository = HomeAccessRepositoryMock()
     homeAccessRepository.requestedURL = requestedURL
@@ -268,6 +301,12 @@ private func makeSUT(
         diskRepository: diskRepository,
         diskScannerRepository: scannerRepository
     )
+    let saveWorkspaceAccessUseCase = SaveWorkspaceAccessUseCase(
+        workspaceAccessRepository: workspaceAccessRepository
+    )
+    let resolveWorkspaceAccessUseCase = ResolveWorkspaceAccessUseCase(
+        workspaceAccessRepository: workspaceAccessRepository
+    )
     let readDiskSpaceUseCase = ReadDiskSpaceUseCase(diskRepository: diskRepository)
 
     let viewModel = CleanerHomeViewModel(
@@ -280,6 +319,8 @@ private func makeSUT(
         refreshStorageCategoryUseCase: refreshStorageCategoryUseCase,
         loadStorageOverviewUseCase: loadStorageOverviewUseCase,
         loadWorkspaceCleanupCategoryUseCase: loadWorkspaceCleanupCategoryUseCase,
+        saveWorkspaceAccessUseCase: saveWorkspaceAccessUseCase,
+        resolveWorkspaceAccessUseCase: resolveWorkspaceAccessUseCase,
         readDiskSpaceUseCase: readDiskSpaceUseCase,
         cleanupProgressStore: cleanupProgressStore
     )
@@ -288,6 +329,7 @@ private func makeSUT(
         viewModel: viewModel,
         diskRepository: diskRepository,
         scannerRepository: scannerRepository,
+        workspaceAccessRepository: workspaceAccessRepository,
         homeAccessRepository: homeAccessRepository,
         monitoringRepository: monitoringRepository,
         cleanupProgressStore: cleanupProgressStore
