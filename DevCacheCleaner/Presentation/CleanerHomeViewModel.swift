@@ -38,6 +38,20 @@ class CleanerHomeViewModel {
     }
     var selectedWorkspaceCategoryForDetails: StorageCategoryEntity?
     var workspaceRowState: StorageCategoryRowState = .ready
+    var cleanAllWorkspaceOptionTitle: String? {
+        guard
+            storageCategorySelected == nil,
+            isWorkspaceCleanupSelected == false,
+            workspaceRowState == .ready,
+            let selectedWorkspaceName,
+            let selectedWorkspaceCategory,
+            selectedWorkspaceCategory.size > 0.01
+        else {
+            return nil
+        }
+
+        return "Also clean selected workspace: \(selectedWorkspaceName) (\(selectedWorkspaceCategory.size.byteCountString))"
+    }
 
     // MARK: - Dependencies
 
@@ -190,13 +204,15 @@ class CleanerHomeViewModel {
         isWorkspaceCleanupSelected = true
     }
 
-    func startCleanup() -> String? {
+    func startCleanup(includeWorkspaceInAllCaches: Bool = false) -> String? {
         if isWorkspaceCleanupSelected {
             return startCleanupForWorkspace()
         }
 
         if storageCategorySelected == nil {
-            return startCleanupForAllCategories()
+            return startCleanupForAllCategories(
+                includeWorkspace: includeWorkspaceInAllCaches
+            )
         }
 
         return startCleanupForSelectedCategory()
@@ -232,14 +248,15 @@ class CleanerHomeViewModel {
         return entity.name
     }
 
-    func startCleanupForAllCategories() -> String? {
+    func startCleanupForAllCategories(includeWorkspace: Bool = false) -> String? {
         guard isCleaning == false else {
             return nil
         }
 
         let categoriesToClean = categories.filter { $0.size > 0.01 }
+        let workspaceCleanup = workspaceCleanupForCleanAll(isIncluded: includeWorkspace)
 
-        guard categoriesToClean.isEmpty == false else {
+        guard categoriesToClean.isEmpty == false || workspaceCleanup != nil else {
             return nil
         }
 
@@ -251,16 +268,24 @@ class CleanerHomeViewModel {
 
         isCleaning = true
         storageCategorySelected = nil
+        let cleanupName = workspaceCleanup == nil ? "All Caches" : "All Caches + Workspace"
+        let categoriesCleanupSize = categoriesToClean.reduce(0) { $0 + $1.size }
+        let workspaceCleanupSize = workspaceCleanup?.category.size ?? 0
+
         cleanupProgressStore.start(
-            categoryName: "All Caches",
-            totalSize: categoriesToClean.reduce(0) { $0 + $1.size }
+            categoryName: cleanupName,
+            totalSize: categoriesCleanupSize + workspaceCleanupSize
         )
 
         Task { [weak self] in
-            await self?.performCleanup(of: categoriesToClean, homeURL: homeURL)
+            await self?.performCleanup(
+                of: categoriesToClean,
+                homeURL: homeURL,
+                workspaceCleanup: workspaceCleanup
+            )
         }
 
-        return "All Caches"
+        return cleanupName
     }
 
     func startCleanupForWorkspace() -> String? {
@@ -289,6 +314,22 @@ class CleanerHomeViewModel {
         }
 
         return selectedWorkspaceCategory.name
+    }
+
+    private func workspaceCleanupForCleanAll(
+        isIncluded: Bool
+    ) -> (category: StorageCategoryEntity, workspaceURL: URL)? {
+        guard
+            isIncluded,
+            workspaceRowState == .ready,
+            let selectedWorkspaceURL,
+            let selectedWorkspaceCategory,
+            selectedWorkspaceCategory.size > 0.01
+        else {
+            return nil
+        }
+
+        return (selectedWorkspaceCategory, selectedWorkspaceURL)
     }
 
     // MARK: - Monitoring
@@ -420,8 +461,14 @@ class CleanerHomeViewModel {
     }
 
     @MainActor
-    private func performCleanup(of categoriesToClean: [StorageCategoryEntity], homeURL: URL) async {
-        let totalCleanupSize = categoriesToClean.reduce(0) { $0 + $1.size }
+    private func performCleanup(
+        of categoriesToClean: [StorageCategoryEntity],
+        homeURL: URL,
+        workspaceCleanup: (category: StorageCategoryEntity, workspaceURL: URL)? = nil
+    ) async {
+        let categoriesCleanupSize = categoriesToClean.reduce(0) { $0 + $1.size }
+        let workspaceCleanupSize = workspaceCleanup?.category.size ?? 0
+        let totalCleanupSize = categoriesCleanupSize + workspaceCleanupSize
         let categoryIDs = Set(categoriesToClean.map(\.id))
         var deletedSizeOffset: CGFloat = 0
         var failedDirectories: [StorageSubCategoryEntity] = []
@@ -454,22 +501,59 @@ class CleanerHomeViewModel {
             }
         }
 
-        storageCategorySelected = nil
-        isCleaning = false
+        guard finishedCategoryCount == categoriesToClean.count else {
+            storageCategorySelected = nil
+            isCleaning = false
 
-        if finishedCategoryCount == categoriesToClean.count {
-            if failedDirectories.isEmpty == false {
-                alertErrorMessage = "Some cache directories could not be deleted."
-                isAlertErrorRequest = true
+            for categoryID in categoryIDs {
+                setCategoryRowState(.ready, for: categoryID)
             }
-
-            await cleanupProgressStore.finish(isComplete: failedDirectories.isEmpty)
             return
         }
 
-        for categoryID in categoryIDs {
-            setCategoryRowState(.ready, for: categoryID)
+        if let workspaceCleanup {
+            var didFinishWorkspace = false
+            workspaceRowState = .deleting
+
+            for await event in cleanStorageCategoryUseCase.execute(
+                homeURL: workspaceCleanup.workspaceURL,
+                category: workspaceCleanup.category
+            ) {
+                applyCleanupEvent(
+                    event,
+                    categoryID: workspaceCleanup.category.id,
+                    deletedSizeOffset: deletedSizeOffset,
+                    totalProgressSize: totalCleanupSize,
+                    onCategoryUpdated: { [weak self] updatedCategory in
+                        self?.selectedWorkspaceCategory = updatedCategory
+                    }
+                )
+
+                if event.phase == .finished {
+                    didFinishWorkspace = true
+                    deletedSizeOffset = min(totalCleanupSize, deletedSizeOffset + event.deletedSize)
+                    failedDirectories.append(contentsOf: event.failedDirectories)
+                    workspaceRowState = .ready
+                }
+            }
+
+            if didFinishWorkspace == false {
+                workspaceRowState = .ready
+                storageCategorySelected = nil
+                isCleaning = false
+                return
+            }
         }
+
+        storageCategorySelected = nil
+        isCleaning = false
+
+        if failedDirectories.isEmpty == false {
+            alertErrorMessage = "Some cache directories could not be deleted."
+            isAlertErrorRequest = true
+        }
+
+        await cleanupProgressStore.finish(isComplete: failedDirectories.isEmpty)
     }
 
     @MainActor

@@ -21,22 +21,9 @@
 		25A8034E2F673F1A00259F05 /* DevCacheCleanerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DevCacheCleanerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2536DF952F87FDF2003E9FE1 /* Exceptions for "DevCacheCleaner" folder in "DevCacheCleaner" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				README.md,
-			);
-			target = 255E041E2F59EA4900589B1F /* DevCacheCleaner */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		255E04212F59EA4900589B1F /* DevCacheCleaner */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				2536DF952F87FDF2003E9FE1 /* Exceptions for "DevCacheCleaner" folder in "DevCacheCleaner" target */,
-			);
 			path = DevCacheCleaner;
 			sourceTree = "<group>";
 		};

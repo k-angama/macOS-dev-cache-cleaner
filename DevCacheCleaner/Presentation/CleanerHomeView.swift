@@ -109,11 +109,16 @@ struct CleanerHomeView: View {
         .onChange(of: viewModel.isAlertCleanCache, { _, newValue in
             if newValue {
                 Task { @MainActor in
-                    if AlertPresenter.showConfirmation(
+                    let confirmation = AlertPresenter.showConfirmation(
                         title: "Clean Cache Files",
-                        message: "Are you sure to proceed? This can't be undone."
-                    ) {
-                        startCleanupWindow()
+                        message: "Are you sure to proceed? This can't be undone.",
+                        checkboxTitle: viewModel.cleanAllWorkspaceOptionTitle
+                    )
+
+                    if confirmation.didConfirm {
+                        startCleanupWindow(
+                            includeWorkspaceInAllCaches: confirmation.isCheckboxChecked
+                        )
                     }
                     viewModel.isAlertCleanCache = false
                 }
@@ -140,8 +145,10 @@ struct CleanerHomeView: View {
 
     }
     
-    func startCleanupWindow() {
-        if let categoryName = viewModel.startCleanup() {
+    func startCleanupWindow(includeWorkspaceInAllCaches: Bool = false) {
+        if let categoryName = viewModel.startCleanup(
+            includeWorkspaceInAllCaches: includeWorkspaceInAllCaches
+        ) {
             openWindow(
                 id: Constants.WindowIds.cleanupProgress,
                 value: categoryName

@@ -104,6 +104,51 @@ struct CleanerHomeViewModelTests {
         ])
     }
 
+    @Test func startCleanup_withoutSelection_whenWorkspaceIncluded_cleansAllCategoriesThenWorkspace() async {
+        let category = makeCategory(
+            name: "Caches",
+            subcategories: [makeSubCategory(name: "Cache/A", size: 1.0)]
+        )
+        let workspaceURL = URL(filePath: "/Users/test/Projects/MyApp")
+        let context = makeSUT(totalDiskCapacity: 300, availableDiskCapacity: 100)
+
+        context.homeAccessRepository.resolvedURL = testHomeURL
+        context.scannerRepository.cleanupDirectories = ["node_modules"]
+        context.diskRepository.setComputeResponses([1.0, 0], for: "Cache/A")
+        context.diskRepository.setComputeResponses([25, 25, 0], for: "node_modules")
+        context.diskRepository.setCleanFileDeletionSteps([1.0], for: "Cache/A")
+        context.diskRepository.setCleanFileDeletionSteps([25], for: "node_modules")
+        context.viewModel.categories = [category]
+        context.viewModel.selectWorkspace(url: workspaceURL)
+
+        let didLoadWorkspace = await waitUntil(timeout: 2) {
+            context.viewModel.workspaceRowState == .ready &&
+            abs((context.viewModel.selectedWorkspaceCategory?.size ?? 0) - 25) < 0.0001
+        }
+
+        context.viewModel.askRemoveAllCaches()
+        let cleanupName = context.viewModel.startCleanup(
+            includeWorkspaceInAllCaches: true
+        )
+
+        let didFinishCleanup = await waitUntil(timeout: 2) {
+            context.viewModel.isCleaning == false &&
+            context.viewModel.workspaceRowState == .ready &&
+            abs(context.viewModel.categories[0].size - 0) < 0.0001 &&
+            abs((context.viewModel.selectedWorkspaceCategory?.size ?? -1) - 0) < 0.0001 &&
+            context.cleanupProgressStore.isFinished
+        }
+
+        #expect(didLoadWorkspace)
+        #expect(cleanupName == "All Caches + Workspace")
+        #expect(didFinishCleanup)
+        #expect(context.cleanupProgressStore.totalSize == 26)
+        #expect(context.diskRepository.cleanedPaths == [
+            context.diskRepository.key(path: "Cache/A"),
+            context.diskRepository.key(path: "node_modules")
+        ])
+    }
+
     @Test func startMonitoring_refreshesAffectedCategoryAndStopsMonitoring() async {
         let category = makeCategory(
             name: "Caches",
