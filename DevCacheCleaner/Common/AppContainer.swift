@@ -17,12 +17,22 @@ class AppContainer {
         manager: DiskManagerImpl()
     )
 
+    private lazy var diskScannerRepository: DiskScannerRepository = DiskScannerRepositoryImpl(
+        manager: DiskScannerManager()
+    )
+
     private lazy var diskMonitoringRepository: DiskMonitoringRepository = DiskMonitoringRepositoryImpl(
         manager: DiskMonitorManagerImpl()
     )
 
+    private lazy var directoryAccessManager = DirectoryAccessManager(params: parameters)
+
     private lazy var homeAccessRepository: HomeAccessRepository = HomeAccessRepositoryImpl(
-        manager: HomeAccessManager(params: parameters)
+        manager: directoryAccessManager
+    )
+
+    private lazy var workspaceAccessRepository: WorkspaceAccessRepository = WorkspaceAccessRepositoryImpl(
+        manager: directoryAccessManager
     )
 
     // MARK: - Stores
@@ -43,6 +53,11 @@ class AppContainer {
         refreshStorageCategoryUseCase: refreshStorageCategoryUseCase
     )
 
+    private lazy var loadWorkspaceCleanupCategoryUseCase = LoadWorkspaceCleanupCategoryUseCase(
+        diskRepository: diskRepository,
+        diskScannerRepository: diskScannerRepository
+    )
+
     private lazy var readDiskSpaceUseCase = ReadDiskSpaceUseCase(
         diskRepository: diskRepository
     )
@@ -59,12 +74,20 @@ class AppContainer {
         diskMonitoringRepository: diskMonitoringRepository
     )
 
-    private lazy var requestHomeAccessUseCase = RequestHomeAccessUseCase(
+    private lazy var saveHomeAccessUseCase = SaveHomeAccessUseCase(
         homeAccessRepository: homeAccessRepository
     )
 
     private lazy var resolveHomeAccessUseCase = ResolveHomeAccessUseCase(
         homeAccessRepository: homeAccessRepository
+    )
+
+    private lazy var saveWorkspaceAccessUseCase = SaveWorkspaceAccessUseCase(
+        workspaceAccessRepository: workspaceAccessRepository
+    )
+
+    private lazy var resolveWorkspaceAccessUseCase = ResolveWorkspaceAccessUseCase(
+        workspaceAccessRepository: workspaceAccessRepository
     )
 
     // MARK: - ViewModels
@@ -74,7 +97,7 @@ class AppContainer {
     )
 
     lazy var cleanerHomeViewModel = CleanerHomeViewModel(
-        requestHomeAccessUseCase: requestHomeAccessUseCase,
+        saveHomeAccessUseCase: saveHomeAccessUseCase,
         resolveHomeAccessUseCase: resolveHomeAccessUseCase,
         buildStorageCategoriesUseCase: buildStorageCategoriesUseCase,
         observeDiskChangesUseCase: observeDiskChangesUseCase,
@@ -82,6 +105,9 @@ class AppContainer {
         cleanAllStorageCategoriesUseCase: cleanAllStorageCategoriesUseCase,
         refreshStorageCategoryUseCase: refreshStorageCategoryUseCase,
         loadStorageOverviewUseCase: loadStorageOverviewUseCase,
+        loadWorkspaceCleanupCategoryUseCase: loadWorkspaceCleanupCategoryUseCase,
+        saveWorkspaceAccessUseCase: saveWorkspaceAccessUseCase,
+        resolveWorkspaceAccessUseCase: resolveWorkspaceAccessUseCase,
         readDiskSpaceUseCase: readDiskSpaceUseCase,
         cleanupProgressStore: cleanupProgressStore
     )

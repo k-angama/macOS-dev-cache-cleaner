@@ -5,11 +5,11 @@
 <h1 align="center">DevCacheCleaner</h1>
 
 <p align="center">
-  A macOS menu bar app for inspecting and cleaning developer caches stored in your Home folder.
+  A macOS menu bar app for inspecting and cleaning developer caches stored in your Home folder and selected workspaces.
 </p>
 
 <p align="center">
-  DevCacheCleaner scans common cache-heavy directories, shows how much disk space they use, and lets you clean one category or all supported categories with live progress feedback.
+  DevCacheCleaner scans common cache-heavy directories, shows how much disk space they use, and lets you clean one category, all supported categories, or generated workspace folders with live progress feedback.
 </p>
 
 ---
@@ -18,7 +18,7 @@
   <img src="./Ressources/DevCacheCleaner-screenshot.jpg" alt="DevCacheCleaner Screenshot"  >
 </p>
 
-If you want to reclaim storage used by Xcode, Gradle, CocoaPods, npm, browsers, and other development tools without manually digging through `~/Library` and hidden folders, this project is built for that workflow.
+If you want to reclaim storage used by Xcode, Gradle, CocoaPods, npm, browsers, project dependencies, and other development tools without manually digging through `~/Library`, hidden folders, and workspace build outputs, this project is built for that workflow.
 
 DevCacheCleaner keeps the scope intentionally focused:
 
@@ -34,6 +34,10 @@ DevCacheCleaner keeps the scope intentionally focused:
 - Per-category storage overview
 - Single-category cleanup
 - Clean-all workflow across all non-empty categories
+- Workspace selection with persisted access
+- Workspace cleanup for generated dependency and build folders
+- Optional Clean All checkbox to include the selected workspace
+- Workspace details view showing the generated folders that can be cleaned
 - Cleanup progress window with live deletion feedback
 - Automatic refresh when watched cache folders change
 
@@ -43,7 +47,9 @@ DevCacheCleaner keeps the scope intentionally focused:
 2. Storage categories are built from configured paths in [`Constants.swift`](./DevCacheCleaner/Common/Utils/Constants.swift).
 3. Each category is scanned and displayed in the main menu bar window.
 4. Folder changes are monitored so affected categories can refresh automatically.
-5. Cleanup runs for one category or all non-empty categories and reports progress in a separate window.
+5. You can optionally select a workspace folder. The app scans it for supported generated directories such as `node_modules`, `Pods`, `.build`, `.gradle`, and `build`.
+6. Cleanup runs for one category, all non-empty Home-folder categories, the selected workspace, or Clean All plus the selected workspace when the confirmation checkbox is enabled.
+7. Cleanup progress is reported in a separate window.
 
 ## Run In Xcode
 
@@ -70,8 +76,11 @@ Main behavior is driven by focused domain use cases such as:
 - `RefreshStorageCategoryUseCase`
 - `CleanStorageCategoryUseCase`
 - `CleanAllStorageCategoriesUseCase`
+- `LoadWorkspaceCleanupCategoryUseCase`
 - `ReadDiskSpaceUseCase`
 - `ObserveDiskChangesUseCase`
+- `SaveWorkspaceAccessUseCase`
+- `ResolveWorkspaceAccessUseCase`
 
 ## Project Structure
 
@@ -125,10 +134,45 @@ Some built-in categories use prefix-based matching. For example, the
 Android/Gradle category only targets `AndroidStudio*` directories inside
 certain JetBrains and Google cache roots.
 
+## Workspace Cleanup
+
+Workspace cleanup is separate from the Home-folder cache categories. After a
+workspace is selected, DevCacheCleaner scans the project tree for known marker
+files and only offers cleanup for generated directories that match those rules.
+
+| Project Type | Marker Files | Generated Directory |
+| --- | --- | --- |
+| Node.js | `package.json` | `node_modules` |
+| CocoaPods | `Podfile` | `Pods` |
+| Swift Package Manager | `Package.swift` | `.build` |
+| Android Gradle root | `settings.gradle`, `settings.gradle.kts` | `.gradle` |
+| Android module build output | `build.gradle`, `build.gradle.kts` | `build` |
+
+The selected workspace can be cleaned directly from the workspace row. It can
+also be included in the Clean All flow by checking the workspace option in the
+confirmation alert. When this option is checked, the progress total includes
+both the Home-folder cache categories and the selected workspace cleanup size.
+
+Workspace cleanup is intended for generated dependency and build folders only.
+Source files, project files, and marker files are not part of the cleanup
+targets.
+
+## Roadmap
+
+- Add a Settings screen
+- Make the minimum cleanup size threshold configurable
+- Allow users to enable or disable built-in cache categories
+- Allow users to manage ignored workspace paths
+- Add configurable workspace cleanup rules
+- Add a preview step before deleting files
+- Improve progress labels for combined Clean All and workspace cleanup
+
 ## Notes
 
 - The app only cleans paths explicitly listed in `Constants`
 - Some configured paths use prefix matching so only specific child directories are removed
+- Workspace cleanup only targets generated directories matched by `WorkspaceCleanupRuleEntity`
+- Clean All includes the selected workspace only when the confirmation checkbox is checked
 - Cleanup deletes cache contents and cannot be undone
 - Backing up anything important before cleaning is still the safer choice
 

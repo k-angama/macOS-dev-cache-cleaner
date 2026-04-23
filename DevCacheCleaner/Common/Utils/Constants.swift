@@ -14,7 +14,17 @@ struct Constants {
     struct StorageItem {
         let title: String
         let color: Color
-        let paths: [String: String]
+        let paths: [StoragePath]
+    }
+
+    struct StoragePath {
+        let path: String
+        let rule: StoragePathRule
+
+        init(_ path: String, rule: StoragePathRule = .allContents) {
+            self.path = path
+            self.rule = rule
+        }
     }
 
     struct Storages {
@@ -23,70 +33,70 @@ struct Constants {
                 title: "IDE (JetBrains, VSCode) Caches",
                 color: .green,
                 paths: [
-                    "Library/Caches/CocoaPods": "",
-                    "Library/Application Support/Code/Cache": "",
-                    "Library/Application Support/Code/CachedData": "",
-                    "Library/Application Support/Code/User/workspaceStorage": ""
+                    StoragePath("Library/Caches/CocoaPods"),
+                    StoragePath("Library/Application Support/Code/Cache"),
+                    StoragePath("Library/Application Support/Code/CachedData"),
+                    StoragePath("Library/Application Support/Code/User/workspaceStorage")
                 ]
             ),
             StorageItem(
                 title: "CocoaPods Caches",
                 color: .yellow,
                 paths: [
-                    ".cocoapods/repos": "",
-                    "Library/Caches/CocoaPods": "",
+                    StoragePath(".cocoapods/repos"),
+                    StoragePath("Library/Caches/CocoaPods"),
                 ]
             ),
             StorageItem(
                 title: "npm/yarn Caches",
                 color: .orange,
                 paths: [
-                    "Library/Caches/Yarn": "",
-                    ".npm-cache-user/_cacache": "",
+                    StoragePath("Library/Caches/Yarn"),
+                    StoragePath(".npm-cache-user/_cacache"),
                 ]
             ),
             StorageItem(
                 title: "Android/Gradle Caches",
                 color: .red,
                 paths: [
-                    ".gradle/caches": "",
-                    ".gradle/daemon": "",
-                    "Library/Caches/Google": "AndroidStudio",
-                    "Library/Caches/JetBrains": "AndroidStudio"
+                    StoragePath(".gradle/caches"),
+                    StoragePath(".gradle/daemon"),
+                    StoragePath("Library/Caches/Google", rule: .childNamePrefix("AndroidStudio")),
+                    StoragePath("Library/Caches/JetBrains", rule: .childNamePrefix("AndroidStudio"))
                 ]
             ),
             StorageItem(
                 title: "Xcode Caches & DerivedData",
                 color: .blue,
                 paths: [
-                    "Library/Developer/Xcode/DerivedData": "",
-                    "Library/Developer/Xcode/iOS DeviceSupport": "",
-                    "Library/Caches/com.apple.dt.Xcode": "",
-                    "Library/Developer/Xcode/Archives": "",
-                    "Library/Developer/Xcode/Products": "",
-                    "Library/Developer/Xcode/DocumentationCache": "",
-                    "Library/Developer/CoreSimulator/Devices": "",
+                    StoragePath("Library/Developer/Xcode/DerivedData"),
+                    StoragePath("Library/Developer/Xcode/iOS DeviceSupport"),
+                    StoragePath("Library/Caches/com.apple.dt.Xcode"),
+                    StoragePath("Library/Developer/Xcode/Archives"),
+                    StoragePath("Library/Developer/Xcode/Products"),
+                    StoragePath("Library/Developer/Xcode/DocumentationCache"),
+                    StoragePath("Library/Developer/CoreSimulator/Devices"),
                 ]
             ),
             StorageItem(
                 title: "Browser Caches (Chrome, Brave, Firefox, Safari, Edge, Opera)",
                 color: .brown,
                 paths: [
-                    "Library/Caches/Google/Chrome": "",
-                    "Library/Caches/BraveSoftware/Brave-Browser": "",
-                    "Library/Caches/Firefox": "",
-                    "Library/Caches/com.apple.Safari": "",
-                    "Library/Caches/Microsoft Edge": "",
-                    "Library/Caches/com.microsoft.edgemac": "",
-                    "Library/Caches/com.operasoftware.Opera": "",
-                    "Library/Caches/com.operasoftware.OperaGX": ""
+                    StoragePath("Library/Caches/Google/Chrome"),
+                    StoragePath("Library/Caches/BraveSoftware/Brave-Browser"),
+                    StoragePath("Library/Caches/Firefox"),
+                    StoragePath("Library/Caches/com.apple.Safari"),
+                    StoragePath("Library/Caches/Microsoft Edge"),
+                    StoragePath("Library/Caches/com.microsoft.edgemac"),
+                    StoragePath("Library/Caches/com.operasoftware.Opera"),
+                    StoragePath("Library/Caches/com.operasoftware.OperaGX")
                 ]
             ),
             StorageItem(
                 title: "Flutter/pub-cache",
                 color: .pink,
                 paths: [
-                    ".pub-cache": "",
+                    StoragePath(".pub-cache"),
                 ]
             ),
         ]

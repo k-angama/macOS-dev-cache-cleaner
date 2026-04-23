@@ -15,36 +15,36 @@ final class DiskRepositoryMock: DiskRepository {
     private(set) var cleanedPaths: [String] = []
     private(set) var computeRequests: [String] = []
 
-    func setComputeResponses(_ responses: [CGFloat], for path: String, match: String = "") {
+    func setComputeResponses(_ responses: [CGFloat], for path: String, rule: StoragePathRule = .allContents) {
         lock.lock()
-        computeResponses[key(path: path, match: match)] = responses
+        computeResponses[key(path: path, rule: rule)] = responses
         lock.unlock()
     }
 
-    func setComputeDelay(_ delayNanoseconds: UInt64, for path: String, match: String = "") {
+    func setComputeDelay(_ delayNanoseconds: UInt64, for path: String, rule: StoragePathRule = .allContents) {
         lock.lock()
-        computeDelays[key(path: path, match: match)] = delayNanoseconds
+        computeDelays[key(path: path, rule: rule)] = delayNanoseconds
         lock.unlock()
     }
 
-    func setCleanFileDeletionSteps(_ steps: [CGFloat], for path: String, match: String = "") {
+    func setCleanFileDeletionSteps(_ steps: [CGFloat], for path: String, rule: StoragePathRule = .allContents) {
         lock.lock()
-        cleanFileDeletionSteps[key(path: path, match: match)] = steps
+        cleanFileDeletionSteps[key(path: path, rule: rule)] = steps
         lock.unlock()
     }
 
-    func setCleanError(_ error: Error, for path: String, match: String = "") {
+    func setCleanError(_ error: Error, for path: String, rule: StoragePathRule = .allContents) {
         lock.lock()
-        cleanErrors[key(path: path, match: match)] = error
+        cleanErrors[key(path: path, rule: rule)] = error
         lock.unlock()
     }
 
-    func key(path: String, match: String) -> String {
-        "\(path)|\(match)"
+    func key(path: String, rule: StoragePathRule = .allContents) -> String {
+        "\(path)|\(rule)"
     }
 
-    func computeDiskSize(homeURL: URL, path: String, match: String) async -> CGFloat {
-        let key = key(path: path, match: match)
+    func computeDiskSize(homeURL: URL, path: String, rule: StoragePathRule) async -> CGFloat {
+        let key = key(path: path, rule: rule)
         lock.lock()
         computeRequests.append(key)
         let delayNanoseconds = computeDelays[key] ?? 0
@@ -73,10 +73,10 @@ final class DiskRepositoryMock: DiskRepository {
     func cleanPath(
         homeURL: URL,
         path: String,
-        match: String,
+        rule: StoragePathRule,
         onFileDeleted: ((CGFloat) -> Void)?
     ) async throws {
-        let key = key(path: path, match: match)
+        let key = key(path: path, rule: rule)
         lock.lock()
         cleanedPaths.append(key)
         let deletionSteps = cleanFileDeletionSteps[key] ?? []

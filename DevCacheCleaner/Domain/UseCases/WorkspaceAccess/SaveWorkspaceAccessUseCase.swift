@@ -1,0 +1,21 @@
+//
+//  SaveWorkspaceAccessUseCase.swift
+//  DevCacheCleaner
+//
+//  Created by Karim Angama on 22/04/2026.
+//
+
+import Foundation
+
+struct SaveWorkspaceAccessUseCase {
+
+    private let workspaceAccessRepository: WorkspaceAccessRepository
+
+    init(workspaceAccessRepository: WorkspaceAccessRepository) {
+        self.workspaceAccessRepository = workspaceAccessRepository
+    }
+
+    func execute(url: URL) -> Bool {
+        workspaceAccessRepository.saveWorkspaceURL(url)
+    }
+}

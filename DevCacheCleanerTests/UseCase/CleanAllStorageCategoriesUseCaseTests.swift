@@ -35,8 +35,8 @@ struct CleanAllStorageCategoriesUseCaseTests {
 
         #expect(finishedCategoryNames == ["First", "Second"])
         #expect(repository.cleanedPaths == [
-            repository.key(path: "Cache/A", match: ""),
-            repository.key(path: "Cache/B", match: "")
+            repository.key(path: "Cache/A"),
+            repository.key(path: "Cache/B")
         ])
     }
 }

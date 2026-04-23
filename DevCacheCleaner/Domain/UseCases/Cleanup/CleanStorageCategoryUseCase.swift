@@ -67,7 +67,7 @@ struct CleanStorageCategoryUseCase {
                         try await diskRepository.cleanPath(
                             homeURL: homeURL,
                             path: subCategory.path,
-                            match: subCategory.match,
+                            rule: subCategory.rule,
                             onFileDeleted: { deletedFileSize in
                                 deletedSizeForCurrentPath += deletedFileSize
                                 continuation.yield(
@@ -93,7 +93,7 @@ struct CleanStorageCategoryUseCase {
                     let refreshedSize = await diskRepository.computeDiskSize(
                         homeURL: homeURL,
                         path: subCategory.path,
-                        match: subCategory.match
+                        rule: subCategory.rule
                     )
                     let refreshedSubCategory = subCategory.updateSize(size: refreshedSize)
 
@@ -153,7 +153,7 @@ struct CleanStorageCategoryUseCase {
             let refreshedSize = await diskRepository.computeDiskSize(
                 homeURL: homeURL,
                 path: subCategory.path,
-                match: subCategory.match
+                rule: subCategory.rule
             )
             let refreshedSubCategory = subCategory.updateSize(size: refreshedSize)
 

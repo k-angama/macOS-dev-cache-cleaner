@@ -32,6 +32,6 @@ struct CleanStorageCategoryUseCaseTests {
         #expect(abs(lastEvent.deletedSize - 2.5) < 0.0001)
         #expect(abs((lastEvent.updatedCategory?.size ?? -1) - 0) < 0.0001)
         #expect(lastEvent.didCompleteFully)
-        #expect(repository.cleanedPaths == [repository.key(path: ".pub-cache", match: "")])
+        #expect(repository.cleanedPaths == [repository.key(path: ".pub-cache")])
     }
 }

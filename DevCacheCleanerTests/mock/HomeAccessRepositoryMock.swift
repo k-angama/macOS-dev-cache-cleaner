@@ -3,15 +3,17 @@ import Foundation
 
 final class HomeAccessRepositoryMock: HomeAccessRepository {
 
-    var requestedURL: URL?
+    var savedURL: URL?
     var resolvedURL: URL?
+    var shouldSaveHomeURL = true
 
-    private(set) var requestCallCount = 0
+    private(set) var saveCallCount = 0
     private(set) var resolveCallCount = 0
 
-    func requestAndSaveHomeAccess() -> URL? {
-        requestCallCount += 1
-        return requestedURL
+    func saveHomeURL(_ url: URL) -> Bool {
+        saveCallCount += 1
+        savedURL = url
+        return shouldSaveHomeURL
     }
 
     func resolveHomeURL() -> URL? {

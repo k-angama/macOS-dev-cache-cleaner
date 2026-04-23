@@ -21,10 +21,10 @@ func makeCategory(
 
 func makeSubCategory(
     name: String,
-    match: String = "",
+    rule: StoragePathRule = .allContents,
     size: CGFloat = 0
 ) -> StorageSubCategoryEntity {
-    StorageSubCategoryEntity(path: name, match: match, size: size)
+    StorageSubCategoryEntity(path: name, rule: rule, size: size)
 }
 
 func collectEvents(
@@ -56,4 +56,29 @@ func waitUntil(
     }
 
     return condition()
+}
+
+func makeTemporaryWorkspaceURL() throws -> URL {
+    let url = FileManager.default.temporaryDirectory
+        .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+    try FileManager.default.createDirectory(
+        at: url,
+        withIntermediateDirectories: true
+    )
+    return url
+}
+
+func createDirectory(at url: URL) throws {
+    try FileManager.default.createDirectory(
+        at: url,
+        withIntermediateDirectories: true
+    )
+}
+
+func writeEmptyFile(at url: URL) throws {
+    try FileManager.default.createDirectory(
+        at: url.deletingLastPathComponent(),
+        withIntermediateDirectories: true
+    )
+    try Data().write(to: url)
 }

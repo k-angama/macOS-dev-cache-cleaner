@@ -17,19 +17,19 @@ struct DiskRepositoryImpl: DiskRepository {
     var totalDiskCapacity: CGFloat { manager.totalDiskCapacity }
     var availableDiskCapacity: CGFloat { manager.availableDiskCapacity }
 
-    func computeDiskSize(homeURL: URL, path: String, match: String) async -> CGFloat {
-        await manager.computeDiskSize(homeURL: homeURL, path: path, match: match)
+    func computeDiskSize(homeURL: URL, path: String, rule: StoragePathRule) async -> CGFloat {
+        await manager.computeDiskSize(homeURL: homeURL, path: path, rule: rule)
     }
 
     func cleanPath(
         homeURL: URL,
         path: String,
-        match: String,
+        rule: StoragePathRule,
         onFileDeleted: ((CGFloat) -> Void)?
     ) async throws {
         try await manager.cleanPath(
             path: path,
-            match: match,
+            rule: rule,
             homeURL: homeURL,
             onFileDeleted: onFileDeleted
         )

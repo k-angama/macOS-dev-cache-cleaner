@@ -5,10 +5,10 @@ import Testing
 @MainActor
 struct CleanerHomeViewModelTests {
 
-    @Test func requestUserDirectoryAccess_whenGranted_marksAccessAndLoadsOverview() async {
-        let context = makeSUT(requestedURL: testHomeURL, totalDiskCapacity: 500, availableDiskCapacity: 200)
+    @Test func selectHomeSpace_whenGranted_marksAccessAndLoadsOverview() async {
+        let context = makeSUT(totalDiskCapacity: 500, availableDiskCapacity: 200)
 
-        context.viewModel.requesUserDirectoryAccess()
+        context.viewModel.selectHomeSpace(url: testHomeURL)
 
         let didLoadOverview = await waitUntil {
             context.viewModel.isAccessUserDirectory &&
@@ -17,19 +17,21 @@ struct CleanerHomeViewModelTests {
         }
 
         #expect(didLoadOverview)
-        #expect(context.homeAccessRepository.requestCallCount == 1)
+        #expect(context.homeAccessRepository.saveCallCount == 1)
+        #expect(context.homeAccessRepository.savedURL == testHomeURL)
         #expect(context.viewModel.isAccessUserDirectory)
         #expect(context.viewModel.totalSize == 500)
         #expect(context.viewModel.freeSize == 200)
         #expect(context.viewModel.isAlertErrorRequest == false)
     }
 
-    @Test func requestUserDirectoryAccess_whenDenied_showsErrorAlert() {
-        let context = makeSUT()
+    @Test func selectHomeSpace_whenSavingFails_showsErrorAlert() {
+        let context = makeSUT(shouldSaveHomeURL: false)
 
-        context.viewModel.requesUserDirectoryAccess()
+        context.viewModel.selectHomeSpace(url: testHomeURL)
 
-        #expect(context.homeAccessRepository.requestCallCount == 1)
+        #expect(context.homeAccessRepository.saveCallCount == 1)
+        #expect(context.homeAccessRepository.savedURL == testHomeURL)
         #expect(context.viewModel.isAccessUserDirectory == false)
         #expect(context.viewModel.isAlertErrorRequest)
         #expect(context.viewModel.alertErrorMessage == "Unable to access the selected directory.")
@@ -47,7 +49,7 @@ struct CleanerHomeViewModelTests {
         context.diskRepository.setCleanFileDeletionSteps([1.0, 1.5], for: ".pub-cache")
         context.viewModel.categories = [category]
 
-        context.viewModel.askRemoveDirectory(entiy: category)
+        context.viewModel.askRemoveDirectory(entity: category)
         let cleanupName = context.viewModel.startCleanup()
 
         let didFinishCleanup = await waitUntil(timeout: 2) {
@@ -62,7 +64,7 @@ struct CleanerHomeViewModelTests {
         #expect(context.viewModel.storageCategorySelected == nil)
         #expect(context.cleanupProgressStore.categoryName == "Flutter")
         #expect(context.diskRepository.cleanedPaths == [
-            context.diskRepository.key(path: ".pub-cache", match: "")
+            context.diskRepository.key(path: ".pub-cache")
         ])
     }
 
@@ -99,8 +101,53 @@ struct CleanerHomeViewModelTests {
         #expect(didFinishCleanup)
         #expect(context.viewModel.storageCategorySelected == nil)
         #expect(context.diskRepository.cleanedPaths == [
-            context.diskRepository.key(path: "Cache/A", match: ""),
-            context.diskRepository.key(path: "Cache/B", match: "")
+            context.diskRepository.key(path: "Cache/A"),
+            context.diskRepository.key(path: "Cache/B")
+        ])
+    }
+
+    @Test func startCleanup_withoutSelection_whenWorkspaceIncluded_cleansAllCategoriesThenWorkspace() async {
+        let category = makeCategory(
+            name: "Caches",
+            subcategories: [makeSubCategory(name: "Cache/A", size: 1.0)]
+        )
+        let workspaceURL = URL(filePath: "/Users/test/Projects/MyApp")
+        let context = makeSUT(totalDiskCapacity: 300, availableDiskCapacity: 100)
+
+        context.homeAccessRepository.resolvedURL = testHomeURL
+        context.scannerRepository.cleanupDirectories = ["node_modules"]
+        context.diskRepository.setComputeResponses([1.0, 0], for: "Cache/A")
+        context.diskRepository.setComputeResponses([25, 25, 0], for: "node_modules")
+        context.diskRepository.setCleanFileDeletionSteps([1.0], for: "Cache/A")
+        context.diskRepository.setCleanFileDeletionSteps([25], for: "node_modules")
+        context.viewModel.categories = [category]
+        context.viewModel.selectWorkspace(url: workspaceURL)
+
+        let didLoadWorkspace = await waitUntil(timeout: 2) {
+            context.viewModel.workspaceRowState == .ready &&
+            abs((context.viewModel.selectedWorkspaceCategory?.size ?? 0) - 25) < 0.0001
+        }
+
+        context.viewModel.askRemoveAllCaches()
+        let cleanupName = context.viewModel.startCleanup(
+            includeWorkspaceInAllCaches: true
+        )
+
+        let didFinishCleanup = await waitUntil(timeout: 2) {
+            context.viewModel.isCleaning == false &&
+            context.viewModel.workspaceRowState == .ready &&
+            abs(context.viewModel.categories[0].size - 0) < 0.0001 &&
+            abs((context.viewModel.selectedWorkspaceCategory?.size ?? -1) - 0) < 0.0001 &&
+            context.cleanupProgressStore.isFinished
+        }
+
+        #expect(didLoadWorkspace)
+        #expect(cleanupName == "All Caches + Workspace")
+        #expect(didFinishCleanup)
+        #expect(context.cleanupProgressStore.totalSize == 26)
+        #expect(context.diskRepository.cleanedPaths == [
+            context.diskRepository.key(path: "Cache/A"),
+            context.diskRepository.key(path: "node_modules")
         ])
     }
 
@@ -150,30 +197,133 @@ struct CleanerHomeViewModelTests {
         #expect(abs((context.viewModel.selectedCategoryForDetails?.size ?? 0) - 4.0) < 0.0001)
     }
 
-    @Test func clearSelectedCategoryForDetails_clearsDetailsSelection() {
-        let category = makeCategory(
-            name: "Flutter/pub-cache",
-            subcategories: [makeSubCategory(name: ".pub-cache", size: 1.0)]
-        )
+    @Test func selectWorkspace_updatesSelectedWorkspaceDisplayState() {
         let context = makeSUT()
+        let workspaceURL = URL(filePath: "/Users/test/Projects/MyApp")
 
-        context.viewModel.categories = [category]
-        context.viewModel.selectCategoryForDetails(category)
-        context.viewModel.clearSelectedCategoryForDetails()
+        context.viewModel.selectWorkspace(url: workspaceURL)
 
-        #expect(context.viewModel.selectedCategoryForDetails == nil)
+        #expect(context.viewModel.selectedWorkspaceName == "MyApp")
+        #expect(context.viewModel.selectedWorkspacePath == "/Users/test/Projects/MyApp")
+        #expect(context.workspaceAccessRepository.savedURL == workspaceURL)
+    }
+
+    @Test func selectWorkspace_loadsWorkspaceCleanupCategoryAndDetails() async throws {
+        let context = makeSUT()
+        let workspaceURL = URL(filePath: "/Users/test/Projects/MyApp")
+
+        context.scannerRepository.cleanupDirectories = ["node_modules"]
+        context.diskRepository.setComputeResponses([25], for: "node_modules")
+
+        context.viewModel.selectWorkspace(url: workspaceURL)
+
+        let didLoadWorkspace = await waitUntil(timeout: 2) {
+            context.viewModel.workspaceRowState == .ready &&
+            context.viewModel.selectedWorkspaceCategory?.categories.map(\.path) == ["node_modules"]
+        }
+
+        context.viewModel.selectWorkspaceForDetails()
+
+        #expect(didLoadWorkspace)
+        #expect(context.viewModel.selectedWorkspaceCategory?.name == "Workspace: MyApp")
+        #expect(abs((context.viewModel.selectedWorkspaceCategory?.size ?? 0) - 25) < 0.0001)
+        #expect(context.viewModel.selectedWorkspaceCategoryForDetails?.categories.map(\.path) == ["node_modules"])
+    }
+
+    @Test func selectWorkspace_keepsWorkspaceRowLoadingWhileScannerRuns() async {
+        let context = makeSUT()
+        let workspaceURL = URL(filePath: "/Users/test/Projects/MyApp")
+
+        context.scannerRepository.cleanupDirectoryDelayNanoseconds = 100_000_000
+        context.scannerRepository.cleanupDirectories = ["node_modules"]
+        context.diskRepository.setComputeResponses([25], for: "node_modules")
+
+        context.viewModel.selectWorkspace(url: workspaceURL)
+
+        #expect(context.viewModel.workspaceRowState == .loading)
+
+        try? await Task.sleep(nanoseconds: 20_000_000)
+
+        #expect(context.viewModel.workspaceRowState == .loading)
+
+        let didLoadWorkspace = await waitUntil(timeout: 2) {
+            context.viewModel.workspaceRowState == .ready &&
+            context.viewModel.selectedWorkspaceCategory?.categories.map(\.path) == ["node_modules"]
+        }
+
+        #expect(didLoadWorkspace)
+    }
+
+    @Test func resolveWorkspaceAccess_whenAvailableRestoresSelectedWorkspace() async {
+        let workspaceURL = URL(filePath: "/Users/test/Projects/MyApp")
+        let context = makeSUT(
+            resolvedWorkspaceURL: workspaceURL,
+            workspaceCleanupDirectories: ["node_modules"],
+            workspaceDirectorySizes: ["node_modules": 25]
+        )
+
+        let didLoadWorkspace = await waitUntil(timeout: 2) {
+            context.viewModel.workspaceRowState == .ready &&
+            context.viewModel.selectedWorkspaceCategory?.categories.map(\.path) == ["node_modules"]
+        }
+
+        #expect(didLoadWorkspace)
+        #expect(context.viewModel.selectedWorkspaceName == "MyApp")
+        #expect(context.viewModel.selectedWorkspacePath == "/Users/test/Projects/MyApp")
+        #expect(context.workspaceAccessRepository.resolveCallCount == 1)
+        #expect(context.workspaceAccessRepository.saveCallCount == 0)
+    }
+
+    @Test func startCleanup_forWorkspace_updatesWorkspaceCategoryAndResetsState() async {
+        let context = makeSUT(totalDiskCapacity: 500, availableDiskCapacity: 200)
+        let workspaceURL = URL(filePath: "/Users/test/Projects/MyApp")
+
+        context.scannerRepository.cleanupDirectories = ["node_modules"]
+        context.diskRepository.setComputeResponses([25, 25, 0], for: "node_modules")
+        context.diskRepository.setCleanFileDeletionSteps([25], for: "node_modules")
+
+        context.viewModel.selectWorkspace(url: workspaceURL)
+
+        let didLoadWorkspace = await waitUntil(timeout: 2) {
+            context.viewModel.workspaceRowState == .ready &&
+            abs((context.viewModel.selectedWorkspaceCategory?.size ?? 0) - 25) < 0.0001
+        }
+
+        context.viewModel.askRemoveWorkspaceCaches()
+        let cleanupName = context.viewModel.startCleanup()
+
+        let didFinishCleanup = await waitUntil(timeout: 2) {
+            context.viewModel.isCleaning == false &&
+            context.viewModel.workspaceRowState == .ready &&
+            abs((context.viewModel.selectedWorkspaceCategory?.size ?? -1) - 0) < 0.0001 &&
+            context.cleanupProgressStore.isFinished
+        }
+
+        #expect(didLoadWorkspace)
+        #expect(cleanupName == "Workspace: MyApp")
+        #expect(didFinishCleanup)
+        #expect(context.viewModel.storageCategorySelected == nil)
+        #expect(context.cleanupProgressStore.categoryName == "Workspace: MyApp")
+        #expect(context.diskRepository.cleanedPaths == [
+            context.diskRepository.key(path: "node_modules")
+        ])
     }
 }
 
 @MainActor
 private func makeSUT(
-    requestedURL: URL? = nil,
+    shouldSaveHomeURL: Bool = true,
     resolvedURL: URL? = nil,
+    resolvedWorkspaceURL: URL? = nil,
+    workspaceCleanupDirectories: [String] = [],
+    workspaceDirectorySizes: [String: CGFloat] = [:],
     totalDiskCapacity: CGFloat = 0,
     availableDiskCapacity: CGFloat = 0
 ) -> (
     viewModel: CleanerHomeViewModel,
     diskRepository: DiskRepositoryMock,
+    scannerRepository: DiskScannerRepositoryMock,
+    workspaceAccessRepository: WorkspaceAccessRepositoryMock,
     homeAccessRepository: HomeAccessRepositoryMock,
     monitoringRepository: DiskMonitoringRepositoryMock,
     cleanupProgressStore: CleanupProgressStore
@@ -182,14 +332,24 @@ private func makeSUT(
     diskRepository.totalDiskCapacity = totalDiskCapacity
     diskRepository.availableDiskCapacity = availableDiskCapacity
 
+    let scannerRepository = DiskScannerRepositoryMock()
+    scannerRepository.cleanupDirectories = workspaceCleanupDirectories
+
+    for (path, size) in workspaceDirectorySizes {
+        diskRepository.setComputeResponses([size], for: path)
+    }
+
+    let workspaceAccessRepository = WorkspaceAccessRepositoryMock()
+    workspaceAccessRepository.resolvedURL = resolvedWorkspaceURL
+
     let homeAccessRepository = HomeAccessRepositoryMock()
-    homeAccessRepository.requestedURL = requestedURL
+    homeAccessRepository.shouldSaveHomeURL = shouldSaveHomeURL
     homeAccessRepository.resolvedURL = resolvedURL
 
     let monitoringRepository = DiskMonitoringRepositoryMock()
     let cleanupProgressStore = CleanupProgressStore()
 
-    let requestHomeAccessUseCase = RequestHomeAccessUseCase(homeAccessRepository: homeAccessRepository)
+    let saveHomeAccessUseCase = SaveHomeAccessUseCase(homeAccessRepository: homeAccessRepository)
     let resolveHomeAccessUseCase = ResolveHomeAccessUseCase(homeAccessRepository: homeAccessRepository)
     let buildStorageCategoriesUseCase = BuildStorageCategoriesUseCase()
     let observeDiskChangesUseCase = ObserveDiskChangesUseCase(
@@ -205,10 +365,20 @@ private func makeSUT(
         buildStorageCategoriesUseCase: buildStorageCategoriesUseCase,
         refreshStorageCategoryUseCase: refreshStorageCategoryUseCase
     )
+    let loadWorkspaceCleanupCategoryUseCase = LoadWorkspaceCleanupCategoryUseCase(
+        diskRepository: diskRepository,
+        diskScannerRepository: scannerRepository
+    )
+    let saveWorkspaceAccessUseCase = SaveWorkspaceAccessUseCase(
+        workspaceAccessRepository: workspaceAccessRepository
+    )
+    let resolveWorkspaceAccessUseCase = ResolveWorkspaceAccessUseCase(
+        workspaceAccessRepository: workspaceAccessRepository
+    )
     let readDiskSpaceUseCase = ReadDiskSpaceUseCase(diskRepository: diskRepository)
 
     let viewModel = CleanerHomeViewModel(
-        requestHomeAccessUseCase: requestHomeAccessUseCase,
+        saveHomeAccessUseCase: saveHomeAccessUseCase,
         resolveHomeAccessUseCase: resolveHomeAccessUseCase,
         buildStorageCategoriesUseCase: buildStorageCategoriesUseCase,
         observeDiskChangesUseCase: observeDiskChangesUseCase,
@@ -216,6 +386,9 @@ private func makeSUT(
         cleanAllStorageCategoriesUseCase: cleanAllStorageCategoriesUseCase,
         refreshStorageCategoryUseCase: refreshStorageCategoryUseCase,
         loadStorageOverviewUseCase: loadStorageOverviewUseCase,
+        loadWorkspaceCleanupCategoryUseCase: loadWorkspaceCleanupCategoryUseCase,
+        saveWorkspaceAccessUseCase: saveWorkspaceAccessUseCase,
+        resolveWorkspaceAccessUseCase: resolveWorkspaceAccessUseCase,
         readDiskSpaceUseCase: readDiskSpaceUseCase,
         cleanupProgressStore: cleanupProgressStore
     )
@@ -223,6 +396,8 @@ private func makeSUT(
     return (
         viewModel: viewModel,
         diskRepository: diskRepository,
+        scannerRepository: scannerRepository,
+        workspaceAccessRepository: workspaceAccessRepository,
         homeAccessRepository: homeAccessRepository,
         monitoringRepository: monitoringRepository,
         cleanupProgressStore: cleanupProgressStore

@@ -20,21 +20,29 @@ struct StorageUsageView: View {
     let categories: [StorageCategoryEntity]
     let rowStates: [UUID: StorageCategoryRowState]
     let isCleaning: Bool
+    var selectedWorkspaceName: String? = nil
+    var selectedWorkspacePath: String? = nil
+    var selectedWorkspaceCategory: StorageCategoryEntity? = nil
+    var workspaceRowState: StorageCategoryRowState = .ready
+    var isWorkspaceSelectionEnabled: Bool = true
     var onOpenDetails: ((StorageCategoryEntity) -> Void)? = nil
     var onClean: ((StorageCategoryEntity) -> Void)? = nil
     var onCleanAll: (() -> Void)? = nil
+    var onSelectWorkspace: (() -> Void)? = nil
+    var onOpenWorkspaceDetails: (() -> Void)? = nil
+    var onCleanWorkspace: (() -> Void)? = nil
     @State private var hoveredCategoryID: UUID?
 
     var totalCategoriesSize: CGFloat {
         categories.sum({ $0.size })
     }
 
-    var systeme: CGFloat {
+    var system: CGFloat {
         (total - totalCategoriesSize) - free
     }
     
     var usedSpace: CGFloat {
-        systeme + categories.map(\.size).reduce(0, +)
+        system + categories.map(\.size).reduce(0, +)
     }
 
     func rowState(for category: StorageCategoryEntity) -> StorageCategoryRowState {
@@ -68,7 +76,7 @@ struct StorageUsageView: View {
                         HStack(spacing: 0) {
                             Rectangle()
                                 .fill(.gray.opacity(0.8))
-                                .frame(width: geo.size.width * (systeme / total), height: 24)
+                                .frame(width: geo.size.width * (system / total), height: 24)
                             ForEach(categories) { cat in
                                 Rectangle()
                                     .fill(cat.color)
@@ -88,7 +96,7 @@ struct StorageUsageView: View {
                             .font(.footnote)
                             .foregroundStyle(.primary)
                         Circle().fill(.gray.opacity(0.8)).frame(width: 10, height: 10)
-                        Text(systeme.byteCountString)
+                        Text(system.byteCountString)
                             .font(.footnote)
                             .foregroundStyle(.primary)
                     }
@@ -187,6 +195,29 @@ struct StorageUsageView: View {
                         .animation(.easeInOut(duration: 0.2), value: state)
                     }
                 }
+                
+                Divider()
+
+                WorkspaceSelectionView(
+                    selectedWorkspaceName: selectedWorkspaceName,
+                    selectedWorkspacePath: selectedWorkspacePath,
+                    workspaceSizeText: selectedWorkspaceCategory?.size.byteCountString ?? "0 KB",
+                    isCleanEnabled: isCleaning == false
+                    && workspaceRowState == .ready
+                    && (selectedWorkspaceCategory?.size ?? 0) > 0.01
+                    && onCleanWorkspace != nil,
+                    isSelectionEnabled: isWorkspaceSelectionEnabled,
+                    state: workspaceRowState,
+                    onSelectWorkspace: {
+                        onSelectWorkspace?()
+                    },
+                    onOpenDetails: {
+                        onOpenWorkspaceDetails?()
+                    },
+                    onClean: {
+                        onCleanWorkspace?()
+                    }
+                )
             }
             Divider()
             HStack {
@@ -230,6 +261,15 @@ struct StorageUsageView: View {
             categories[6].id: .deleting
         ],
         isCleaning: false,
+        selectedWorkspaceName: "DevCacheCleaner",
+        selectedWorkspacePath: "/Users/kangama/Documents/Projets/Desktop/MacOS/app/DevCacheCleaner",
+        selectedWorkspaceCategory: .init(
+            name: "Workspace: DevCacheCleaner",
+            color: .teal,
+            size: 17.6,
+            categories: []
+        ),
+        workspaceRowState: .ready,
         onOpenDetails: { cat in
             print("Open details for: \(cat.name)")
         },
@@ -238,6 +278,15 @@ struct StorageUsageView: View {
         },
         onCleanAll: {
             print("Clean All tapped")
+        },
+        onSelectWorkspace: {
+            print("Select workspace tapped")
+        },
+        onOpenWorkspaceDetails: {
+            print("Open workspace details")
+        },
+        onCleanWorkspace: {
+            print("Clean workspace")
         }
     )
     .padding()

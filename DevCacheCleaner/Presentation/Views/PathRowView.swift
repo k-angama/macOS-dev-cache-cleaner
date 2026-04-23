@@ -22,11 +22,9 @@ struct PathRowView: View {
                     .font(.subheadline)
                     .textSelection(.enabled)
 
-                if subcategory.match.isEmpty == false {
-                    Text("Match prefix: \(subcategory.match)*")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
+                Text(subcategory.rule.displayDescription)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer(minLength: 12)
@@ -45,7 +43,7 @@ struct PathRowView: View {
     PathRowView(
         subcategory: StorageSubCategoryEntity(
             path: "Library/Application Support/Code/User/workspaceStorage",
-            match: "",
+            rule: .allContents,
             size: 1_731_485_440
         )
     )

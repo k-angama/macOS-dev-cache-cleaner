@@ -29,7 +29,7 @@ struct RefreshStorageCategoryUseCase {
             let size = await diskRepository.computeDiskSize(
                 homeURL: homeURL,
                 path: subCategory.path,
-                match: subCategory.match
+                rule: subCategory.rule
             )
             let updatedSubCategory = subCategory.updateSize(size: size)
 

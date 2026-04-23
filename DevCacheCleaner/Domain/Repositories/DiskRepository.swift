@@ -10,11 +10,11 @@ import Foundation
 public protocol DiskRepository {
     var totalDiskCapacity: CGFloat { get }
     var availableDiskCapacity: CGFloat { get }
-    func computeDiskSize(homeURL: URL, path: String, match: String) async -> CGFloat
+    func computeDiskSize(homeURL: URL, path: String, rule: StoragePathRule) async -> CGFloat
     func cleanPath(
         homeURL: URL,
         path: String,
-        match: String,
+        rule: StoragePathRule,
         onFileDeleted: ((CGFloat) -> Void)?
     ) async throws
 }

@@ -8,17 +8,17 @@
 import Foundation
 
 struct HomeAccessRepositoryImpl: HomeAccessRepository {
-    private let manager: HomeAccessManager
+    private let manager: DirectoryAccessManaging
 
-    init(manager: HomeAccessManager) {
+    init(manager: DirectoryAccessManaging) {
         self.manager = manager
     }
 
-    func requestAndSaveHomeAccess() -> URL? {
-        manager.requestAndSaveHomeAccess()
+    func saveHomeURL(_ url: URL) -> Bool {
+        manager.saveAccess(for: url, kind: .home)
     }
 
     func resolveHomeURL() -> URL? {
-        manager.resolveHomeURL()
+        manager.resolveURL(for: .home)
     }
 }

@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  CleanerHomeView.swift
 //  DevCacheCleaner
 //
 //  Created by Karim Angama on 05/03/2026.
@@ -10,6 +10,8 @@ import AppKit
 
 struct CleanerHomeView: View {
     @State var viewModel: CleanerHomeViewModel
+    @State private var isWorkspaceOpenPanelPresented = false
+    @State private var isHomeOpenPanelPresented = false
     @Environment(\.openWindow) var openWindow
     
     var body: some View {
@@ -23,14 +25,28 @@ struct CleanerHomeView: View {
                         categories: viewModel.categories,
                         rowStates: viewModel.categoryRowStates,
                         isCleaning: viewModel.isCleaning,
+                        selectedWorkspaceName: viewModel.selectedWorkspaceName,
+                        selectedWorkspacePath: viewModel.selectedWorkspacePath,
+                        selectedWorkspaceCategory: viewModel.selectedWorkspaceCategory,
+                        workspaceRowState: viewModel.workspaceRowState,
+                        isWorkspaceSelectionEnabled: viewModel.isCleaning == false,
                         onOpenDetails: { category in
                             viewModel.selectCategoryForDetails(category)
                         },
                         onClean: { entity in
-                            viewModel.askRemoveDirectory(entiy: entity)
+                            viewModel.askRemoveDirectory(entity: entity)
                         },
                         onCleanAll: {
                             viewModel.askRemoveAllCaches()
+                        },
+                        onSelectWorkspace: {
+                            isWorkspaceOpenPanelPresented = true
+                        },
+                        onOpenWorkspaceDetails: {
+                            viewModel.selectWorkspaceForDetails()
+                        },
+                        onCleanWorkspace: {
+                            viewModel.askRemoveWorkspaceCaches()
                         }
                     )
                 }
@@ -43,7 +59,7 @@ struct CleanerHomeView: View {
                         .font(.body)
                         .foregroundStyle(.secondary)
                     Button("Grant Access", systemImage: "square.on.square") {
-                        viewModel.requesUserDirectoryAccess()
+                        isHomeOpenPanelPresented = true
                     }
                     .padding(.top)
                 }
@@ -76,11 +92,6 @@ struct CleanerHomeView: View {
         .onDisappear(perform: {
             viewModel.stopMonitoring()
         })
-        .alert("Access Home Directory", isPresented: $viewModel.isAlertNotHomeDirectory, actions: {
-            Button(role: .close) { }
-        }, message: {
-            Text("Please select the Home directory")
-        })
         .onChange(of: viewModel.isAlertErrorRequest, { _, newValue in
             if newValue {
                 Task { @MainActor in
@@ -94,11 +105,16 @@ struct CleanerHomeView: View {
         .onChange(of: viewModel.isAlertCleanCache, { _, newValue in
             if newValue {
                 Task { @MainActor in
-                    if AlertPresenter.showConfirmation(
+                    let confirmation = AlertPresenter.showConfirmation(
                         title: "Clean Cache Files",
-                        message: "Are you sure to proceed? This can't be undone."
-                    ) {
-                        startCleanupWindow()
+                        message: "Are you sure to proceed? This can't be undone.",
+                        checkboxTitle: viewModel.cleanAllWorkspaceOptionTitle
+                    )
+
+                    if confirmation.didConfirm {
+                        startCleanupWindow(
+                            includeWorkspaceInAllCaches: confirmation.isCheckboxChecked
+                        )
                     }
                     viewModel.isAlertCleanCache = false
                 }
@@ -109,11 +125,34 @@ struct CleanerHomeView: View {
         ) { category in
             StorageCategoryDetailsView(category: category)
         }
+        .floatingPanel(
+            of: $viewModel.selectedWorkspaceCategoryForDetails
+        ) { category in
+            StorageCategoryDetailsView(category: category)
+        }
+        .directoryOpenPanel(
+            isPresented: $isWorkspaceOpenPanelPresented,
+            title: "Select Workspace",
+            message: "Choose a workspace folder",
+            prompt: "Select Workspace"
+        ) { url in
+            viewModel.selectWorkspace(url: url)
+        }
+        .directoryOpenPanel(
+            isPresented: $isHomeOpenPanelPresented,
+            title: "Home",
+            message: "Select your Home folder",
+            prompt: "Grant Access",
+        ) { url in
+            viewModel.selectHomeSpace(url: url)
+        }
 
     }
     
-    func startCleanupWindow() {
-        if let categoryName = viewModel.startCleanup() {
+    func startCleanupWindow(includeWorkspaceInAllCaches: Bool = false) {
+        if let categoryName = viewModel.startCleanup(
+            includeWorkspaceInAllCaches: includeWorkspaceInAllCaches
+        ) {
             openWindow(
                 id: Constants.WindowIds.cleanupProgress,
                 value: categoryName
@@ -148,6 +187,7 @@ struct CleanerHomeView: View {
     viewModel.isAlertCleanCache = false
     viewModel.totalSize = 500
     viewModel.freeSize = 70
+    viewModel.selectWorkspace(url: URL(filePath: "/Users/kangama/Documents/Projets/Desktop/MacOS/app/DevCacheCleaner"))
     viewModel.categories = categories
     viewModel.categoryRowStates = [
         categories[1].id: .loading,

@@ -13,11 +13,11 @@ protocol DiskManager {
     var availableDiskCapacity: CGFloat { get }
     func cleanPath(
         path: String,
-        match: String,
+        rule: StoragePathRule,
         homeURL: URL,
         onFileDeleted: ((CGFloat) -> Void)?
     ) async throws
-    func computeDiskSize(homeURL: URL, path: String, match: String?) async -> CGFloat
+    func computeDiskSize(homeURL: URL, path: String, rule: StoragePathRule) async -> CGFloat
 }
 
 enum DiskManagerError: Error {
@@ -31,13 +31,13 @@ class DiskManagerImpl: DiskManager {
     var totalDiskCapacity: CGFloat {
         let url = URL(filePath: "/")
         let results = try? url.resourceValues(forKeys: [.volumeTotalCapacityKey])
-        return (results?.volumeTotalCapacity ?? 0).toCGFlot
+        return (results?.volumeTotalCapacity ?? 0).toCGFloat
     }
     
     var availableDiskCapacity: CGFloat {
         let url = URL(filePath: "/")
         let results = try? url.resourceValues(forKeys: [.volumeAvailableCapacityKey])
-        return (results?.volumeAvailableCapacity ?? 0).toCGFlot
+        return (results?.volumeAvailableCapacity ?? 0).toCGFloat
     }
     
     // MARK: - Public Methode
@@ -53,7 +53,7 @@ class DiskManagerImpl: DiskManager {
                 bytes = 0
             }
         }
-        return bytes.toCGFlot
+        return bytes.toCGFloat
     }
     
     // MARK: - Private Methode
@@ -94,7 +94,7 @@ class DiskManagerImpl: DiskManager {
         }
 
         let size = values.totalFileAllocatedSize ?? values.fileAllocatedSize ?? 0
-        return size.toCGFlot
+        return size.toCGFloat
     }
 
     private func deleteContents(
@@ -169,7 +169,7 @@ extension DiskManagerImpl {
     
     func cleanPath(
         path: String,
-        match: String,
+        rule: StoragePathRule,
         homeURL: URL,
         onFileDeleted: ((CGFloat) -> Void)?
     ) async throws {
@@ -190,20 +190,21 @@ extension DiskManagerImpl {
                             throw DiskManagerError.directoryDoesNotExist
                         }
 
-                        if match.isEmpty {
+                        switch rule {
+                        case .allContents:
                             try self.deleteContents(
                                 of: targetURL,
                                 fileManager: fm,
                                 onFileDeleted: onFileDeleted
                             )
-                        } else {
+                        case .childNamePrefix(let prefix):
                             let items = try fm.contentsOfDirectory(
                                 at: targetURL,
                                 includingPropertiesForKeys: nil,
                                 options: [.skipsHiddenFiles]
                             )
 
-                            for itemURL in items where itemURL.lastPathComponent.hasPrefix(match) {
+                            for itemURL in items where itemURL.lastPathComponent.hasPrefix(prefix) {
                                 try self.deleteItemRecursively(
                                     at: itemURL,
                                     fileManager: fm,
@@ -221,7 +222,7 @@ extension DiskManagerImpl {
         }
     }
     
-    func computeDiskSize(homeURL: URL, path: String, match: String?) async -> CGFloat {
+    func computeDiskSize(homeURL: URL, path: String, rule: StoragePathRule) async -> CGFloat {
         
         return await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .utility).async { [weak self] in
@@ -230,24 +231,25 @@ extension DiskManagerImpl {
                     return
                 }
                 
-                guard let match = match, !match.isEmpty else {
+                switch rule {
+                case .allContents:
                     let size = self.getDiskSize(path: path, homeURL: homeURL)
                     continuation.resume(returning: size)
                     return
-                }
-                
-                var localTotal: CGFloat = 0
-                let fm = FileManager.default
-                homeURL.withSecurityScope {
-                    let base = homeURL.appending(path: path, directoryHint: .isDirectory)
-                    guard let items = try? fm.contentsOfDirectory(at: base, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) else {
-                        continuation.resume(returning: 0)
-                        return
+                case .childNamePrefix(let prefix):
+                    var localTotal: CGFloat = 0
+                    let fm = FileManager.default
+                    homeURL.withSecurityScope {
+                        let base = homeURL.appending(path: path, directoryHint: .isDirectory)
+                        guard let items = try? fm.contentsOfDirectory(at: base, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) else {
+                            continuation.resume(returning: 0)
+                            return
+                        }
+                        for url in items where url.lastPathComponent.hasPrefix(prefix) {
+                            localTotal += self.getDiskSize(path: "\(path)/\(url.lastPathComponent)", homeURL: homeURL)
+                        }
+                        continuation.resume(returning: localTotal)
                     }
-                    for url in items where url.lastPathComponent.hasPrefix(match) {
-                        localTotal += self.getDiskSize(path: "\(path)/\(url.lastPathComponent)", homeURL: homeURL)
-                    }
-                    continuation.resume(returning: localTotal)
                 }
             }
         }
