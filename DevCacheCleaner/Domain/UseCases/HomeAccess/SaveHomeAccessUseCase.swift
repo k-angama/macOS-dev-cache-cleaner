@@ -1,5 +1,5 @@
 //
-//  RequestHomeAccessUseCase.swift
+//  SaveHomeAccessUseCase.swift
 //  DevCacheCleaner
 //
 //  Created by Karim Angama on 15/03/2026.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct RequestHomeAccessUseCase {
+struct SaveHomeAccessUseCase {
 
     private let homeAccessRepository: HomeAccessRepository
 
@@ -15,7 +15,7 @@ struct RequestHomeAccessUseCase {
         self.homeAccessRepository = homeAccessRepository
     }
 
-    func execute() -> URL? {
-        homeAccessRepository.requestAndSaveHomeAccess()
+    func execute(url: URL) -> Bool {
+        homeAccessRepository.saveHomeURL(url)
     }
 }

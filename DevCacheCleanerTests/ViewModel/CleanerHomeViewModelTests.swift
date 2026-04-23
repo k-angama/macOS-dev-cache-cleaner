@@ -5,10 +5,10 @@ import Testing
 @MainActor
 struct CleanerHomeViewModelTests {
 
-    @Test func requestUserDirectoryAccess_whenGranted_marksAccessAndLoadsOverview() async {
-        let context = makeSUT(requestedURL: testHomeURL, totalDiskCapacity: 500, availableDiskCapacity: 200)
+    @Test func selectHomeSpace_whenGranted_marksAccessAndLoadsOverview() async {
+        let context = makeSUT(totalDiskCapacity: 500, availableDiskCapacity: 200)
 
-        context.viewModel.requestUserDirectoryAccess()
+        context.viewModel.selectHomeSpace(url: testHomeURL)
 
         let didLoadOverview = await waitUntil {
             context.viewModel.isAccessUserDirectory &&
@@ -17,19 +17,21 @@ struct CleanerHomeViewModelTests {
         }
 
         #expect(didLoadOverview)
-        #expect(context.homeAccessRepository.requestCallCount == 1)
+        #expect(context.homeAccessRepository.saveCallCount == 1)
+        #expect(context.homeAccessRepository.savedURL == testHomeURL)
         #expect(context.viewModel.isAccessUserDirectory)
         #expect(context.viewModel.totalSize == 500)
         #expect(context.viewModel.freeSize == 200)
         #expect(context.viewModel.isAlertErrorRequest == false)
     }
 
-    @Test func requestUserDirectoryAccess_whenDenied_showsErrorAlert() {
-        let context = makeSUT()
+    @Test func selectHomeSpace_whenSavingFails_showsErrorAlert() {
+        let context = makeSUT(shouldSaveHomeURL: false)
 
-        context.viewModel.requestUserDirectoryAccess()
+        context.viewModel.selectHomeSpace(url: testHomeURL)
 
-        #expect(context.homeAccessRepository.requestCallCount == 1)
+        #expect(context.homeAccessRepository.saveCallCount == 1)
+        #expect(context.homeAccessRepository.savedURL == testHomeURL)
         #expect(context.viewModel.isAccessUserDirectory == false)
         #expect(context.viewModel.isAlertErrorRequest)
         #expect(context.viewModel.alertErrorMessage == "Unable to access the selected directory.")
@@ -310,7 +312,7 @@ struct CleanerHomeViewModelTests {
 
 @MainActor
 private func makeSUT(
-    requestedURL: URL? = nil,
+    shouldSaveHomeURL: Bool = true,
     resolvedURL: URL? = nil,
     resolvedWorkspaceURL: URL? = nil,
     workspaceCleanupDirectories: [String] = [],
@@ -341,13 +343,13 @@ private func makeSUT(
     workspaceAccessRepository.resolvedURL = resolvedWorkspaceURL
 
     let homeAccessRepository = HomeAccessRepositoryMock()
-    homeAccessRepository.requestedURL = requestedURL
+    homeAccessRepository.shouldSaveHomeURL = shouldSaveHomeURL
     homeAccessRepository.resolvedURL = resolvedURL
 
     let monitoringRepository = DiskMonitoringRepositoryMock()
     let cleanupProgressStore = CleanupProgressStore()
 
-    let requestHomeAccessUseCase = RequestHomeAccessUseCase(homeAccessRepository: homeAccessRepository)
+    let saveHomeAccessUseCase = SaveHomeAccessUseCase(homeAccessRepository: homeAccessRepository)
     let resolveHomeAccessUseCase = ResolveHomeAccessUseCase(homeAccessRepository: homeAccessRepository)
     let buildStorageCategoriesUseCase = BuildStorageCategoriesUseCase()
     let observeDiskChangesUseCase = ObserveDiskChangesUseCase(
@@ -376,7 +378,7 @@ private func makeSUT(
     let readDiskSpaceUseCase = ReadDiskSpaceUseCase(diskRepository: diskRepository)
 
     let viewModel = CleanerHomeViewModel(
-        requestHomeAccessUseCase: requestHomeAccessUseCase,
+        saveHomeAccessUseCase: saveHomeAccessUseCase,
         resolveHomeAccessUseCase: resolveHomeAccessUseCase,
         buildStorageCategoriesUseCase: buildStorageCategoriesUseCase,
         observeDiskChangesUseCase: observeDiskChangesUseCase,

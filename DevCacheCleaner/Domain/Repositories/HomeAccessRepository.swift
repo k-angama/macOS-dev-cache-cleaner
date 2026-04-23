@@ -8,6 +8,6 @@
 import Foundation
 
 protocol HomeAccessRepository {
-    func requestAndSaveHomeAccess() -> URL?
+    func saveHomeURL(_ url: URL) -> Bool
     func resolveHomeURL() -> URL?
 }

@@ -60,7 +60,7 @@ extension View {
         title: String,
         message: String,
         prompt: String = "Select",
-        directoryURL: URL? = nil,
+        directoryURL: URL? = FileManager.default.homeDirectoryForCurrentUser,
         onSelection: @escaping (URL) -> Void,
         onCancellation: @escaping () -> Void = {}
     ) -> some View {

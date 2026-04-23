@@ -74,7 +74,7 @@ class AppContainer {
         diskMonitoringRepository: diskMonitoringRepository
     )
 
-    private lazy var requestHomeAccessUseCase = RequestHomeAccessUseCase(
+    private lazy var saveHomeAccessUseCase = SaveHomeAccessUseCase(
         homeAccessRepository: homeAccessRepository
     )
 
@@ -97,7 +97,7 @@ class AppContainer {
     )
 
     lazy var cleanerHomeViewModel = CleanerHomeViewModel(
-        requestHomeAccessUseCase: requestHomeAccessUseCase,
+        saveHomeAccessUseCase: saveHomeAccessUseCase,
         resolveHomeAccessUseCase: resolveHomeAccessUseCase,
         buildStorageCategoriesUseCase: buildStorageCategoriesUseCase,
         observeDiskChangesUseCase: observeDiskChangesUseCase,

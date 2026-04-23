@@ -11,6 +11,7 @@ import AppKit
 struct CleanerHomeView: View {
     @State var viewModel: CleanerHomeViewModel
     @State private var isWorkspaceOpenPanelPresented = false
+    @State private var isHomeOpenPanelPresented = false
     @Environment(\.openWindow) var openWindow
     
     var body: some View {
@@ -58,7 +59,7 @@ struct CleanerHomeView: View {
                         .font(.body)
                         .foregroundStyle(.secondary)
                     Button("Grant Access", systemImage: "square.on.square") {
-                        viewModel.requestUserDirectoryAccess()
+                        isHomeOpenPanelPresented = true
                     }
                     .padding(.top)
                 }
@@ -136,6 +137,14 @@ struct CleanerHomeView: View {
             prompt: "Select Workspace"
         ) { url in
             viewModel.selectWorkspace(url: url)
+        }
+        .directoryOpenPanel(
+            isPresented: $isHomeOpenPanelPresented,
+            title: "Home",
+            message: "Select your Home folder",
+            prompt: "Grant Access",
+        ) { url in
+            viewModel.selectHomeSpace(url: url)
         }
 
     }

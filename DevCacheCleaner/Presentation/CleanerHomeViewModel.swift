@@ -62,7 +62,7 @@ class CleanerHomeViewModel {
 
     // MARK: - UseCase
 
-    private let requestHomeAccessUseCase: RequestHomeAccessUseCase
+    private let saveHomeAccessUseCase: SaveHomeAccessUseCase
     private let resolveHomeAccessUseCase: ResolveHomeAccessUseCase
     private let buildStorageCategoriesUseCase: BuildStorageCategoriesUseCase
     private let observeDiskChangesUseCase: ObserveDiskChangesUseCase
@@ -82,7 +82,7 @@ class CleanerHomeViewModel {
     // MARK: - Init
 
     init(
-        requestHomeAccessUseCase: RequestHomeAccessUseCase,
+        saveHomeAccessUseCase: SaveHomeAccessUseCase,
         resolveHomeAccessUseCase: ResolveHomeAccessUseCase,
         buildStorageCategoriesUseCase: BuildStorageCategoriesUseCase,
         observeDiskChangesUseCase: ObserveDiskChangesUseCase,
@@ -96,7 +96,7 @@ class CleanerHomeViewModel {
         readDiskSpaceUseCase: ReadDiskSpaceUseCase,
         cleanupProgressStore: CleanupProgressStore
     ) {
-        self.requestHomeAccessUseCase = requestHomeAccessUseCase
+        self.saveHomeAccessUseCase = saveHomeAccessUseCase
         self.resolveHomeAccessUseCase = resolveHomeAccessUseCase
         self.buildStorageCategoriesUseCase = buildStorageCategoriesUseCase
         self.observeDiskChangesUseCase = observeDiskChangesUseCase
@@ -114,20 +114,23 @@ class CleanerHomeViewModel {
 
     // MARK: - Access
 
-    func requestUserDirectoryAccess() {
-        isAlertErrorRequest = false
+    func selectHomeSpace(url: URL?) {
+        guard let url else {
+            return
+        }
 
-        if let url = requestHomeAccessUseCase.execute() {
+        if saveHomeAccessUseCase.execute(url: url) == false {
+            alertErrorMessage = "Unable to access the selected directory."
+            isAlertErrorRequest = true
+        } else {
             isAccessUserDirectory = true
             Task { [weak self] in
                 await self?.loadStorageOverview(homeURL: url)
             }
-        } else {
-            alertErrorMessage = "Unable to access the selected directory."
-            isAlertErrorRequest = true
         }
+
     }
-    
+
     func resolveHomeURL() {
         if let homeURL = resolveHomeAccessUseCase.execute() {
             isAccessUserDirectory = true

@@ -14,11 +14,11 @@ struct HomeAccessRepositoryImpl: HomeAccessRepository {
         self.manager = manager
     }
 
-    func requestAndSaveHomeAccess() -> URL? {
-        manager.requestAndSaveHomeAccess()
+    func saveHomeURL(_ url: URL) -> Bool {
+        manager.saveAccess(for: url, kind: .home)
     }
 
     func resolveHomeURL() -> URL? {
-        manager.resolveHomeURL()
+        manager.resolveURL(for: .home)
     }
 }

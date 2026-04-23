@@ -14,9 +14,6 @@ enum DirectoryAccessKind {
 }
 
 protocol DirectoryAccessManaging {
-    func resolveHomeURL() -> URL?
-    func requestAndSaveHomeAccess() -> URL?
-    func ensureHomeAccess() -> URL?
     func resolveURL(for kind: DirectoryAccessKind) -> URL?
     func saveAccess(for url: URL, kind: DirectoryAccessKind) -> Bool
     func clearAccess(for kind: DirectoryAccessKind)
@@ -27,10 +24,6 @@ final class DirectoryAccessManager: DirectoryAccessManaging {
 
     init(params: Parameters) {
         self.params = params
-    }
-
-    func resolveHomeURL() -> URL? {
-        resolveURL(for: .home)
     }
 
     func resolveURL(for kind: DirectoryAccessKind) -> URL? {
@@ -50,49 +43,6 @@ final class DirectoryAccessManager: DirectoryAccessManaging {
             clearAccess(for: kind)
             return nil
         }
-    }
-
-    func requestAndSaveHomeAccess() -> URL? {
-        requestAndSaveAccess(
-            for: .home,
-            title: nil,
-            message: "Select your Home folder",
-            prompt: "Grant Access",
-            directoryURL: FileManager.default.homeDirectoryForCurrentUser
-        )
-    }
-
-    func requestAndSaveAccess(
-        for kind: DirectoryAccessKind,
-        title: String?,
-        message: String,
-        prompt: String,
-        directoryURL: URL?
-    ) -> URL? {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.prompt = prompt
-        panel.message = message
-        panel.directoryURL = directoryURL
-
-        if let title {
-            panel.title = title
-        }
-
-        if panel.runModal() == .OK, let url = panel.url {
-            _ = saveAccess(for: url, kind: kind)
-            return url
-        }
-        return nil
-    }
-
-    func ensureHomeAccess() -> URL? {
-        if let url = resolveHomeURL() {
-            return url
-        }
-        return requestAndSaveHomeAccess()
     }
 
     func saveAccess(for url: URL, kind: DirectoryAccessKind) -> Bool {
