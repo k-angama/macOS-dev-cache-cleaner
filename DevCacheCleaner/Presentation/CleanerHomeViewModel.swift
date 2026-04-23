@@ -24,10 +24,6 @@ class CleanerHomeViewModel {
     var categoryRowStates: [UUID: StorageCategoryRowState] = [:]
     var isAlertErrorRequest: Bool = false
     var alertErrorMessage: String = "No access directory"
-    var isAlertNotHomeDirectory: Bool = false
-    var isAlertCleanCache: Bool = false
-    var storageCategorySelected: StorageCategoryEntity?
-    var selectedCategoryForDetails: StorageCategoryEntity?
     var isCleaning: Bool = false
     var selectedWorkspaceName: String?
     var selectedWorkspacePath: String?
@@ -36,7 +32,6 @@ class CleanerHomeViewModel {
             syncSelectedWorkspaceCategoryForDetails()
         }
     }
-    var selectedWorkspaceCategoryForDetails: StorageCategoryEntity?
     var workspaceRowState: StorageCategoryRowState = .ready
     var cleanAllWorkspaceOptionTitle: String? {
         guard
@@ -53,7 +48,20 @@ class CleanerHomeViewModel {
         return "Also clean selected workspace: \(selectedWorkspaceName) (\(selectedWorkspaceCategory.size.byteCountString))"
     }
 
-    // MARK: - Dependencies
+    // MARK: - Input
+
+    var isAlertNotHomeDirectory: Bool = false
+    var isAlertCleanCache: Bool = false
+    var selectedCategoryForDetails: StorageCategoryEntity?
+    var selectedWorkspaceCategoryForDetails: StorageCategoryEntity?
+
+    // MARK: - ViewModel State
+
+    private var storageCategorySelected: StorageCategoryEntity?
+    private var selectedWorkspaceURL: URL?
+    private var isWorkspaceCleanupSelected = false
+
+    // MARK: - UseCase
 
     private let requestHomeAccessUseCase: RequestHomeAccessUseCase
     private let resolveHomeAccessUseCase: ResolveHomeAccessUseCase
@@ -67,10 +75,10 @@ class CleanerHomeViewModel {
     private let saveWorkspaceAccessUseCase: SaveWorkspaceAccessUseCase
     private let resolveWorkspaceAccessUseCase: ResolveWorkspaceAccessUseCase
     private let readDiskSpaceUseCase: ReadDiskSpaceUseCase
+    
+    // MARK: - Store
+    
     private let cleanupProgressStore: CleanupProgressStore
-
-    private var selectedWorkspaceURL: URL?
-    private var isWorkspaceCleanupSelected = false
 
     // MARK: - Init
 

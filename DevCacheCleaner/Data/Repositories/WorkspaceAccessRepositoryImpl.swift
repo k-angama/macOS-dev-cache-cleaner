@@ -21,8 +21,4 @@ struct WorkspaceAccessRepositoryImpl: WorkspaceAccessRepository {
     func resolveWorkspaceURL() -> URL? {
         manager.resolveURL(for: .workspace)
     }
-
-    func clearWorkspaceURL() {
-        manager.clearAccess(for: .workspace)
-    }
 }
