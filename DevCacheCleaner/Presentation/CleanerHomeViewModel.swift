@@ -50,14 +50,13 @@ class CleanerHomeViewModel {
 
     // MARK: - Input
 
-    var isAlertNotHomeDirectory: Bool = false
     var isAlertCleanCache: Bool = false
     var selectedCategoryForDetails: StorageCategoryEntity?
     var selectedWorkspaceCategoryForDetails: StorageCategoryEntity?
 
     // MARK: - ViewModel State
 
-    private var storageCategorySelected: StorageCategoryEntity?
+    private(set) var storageCategorySelected: StorageCategoryEntity?
     private var selectedWorkspaceURL: URL?
     private var isWorkspaceCleanupSelected = false
 
@@ -170,11 +169,6 @@ class CleanerHomeViewModel {
         Task { [weak self] in
             await self?.loadWorkspaceCleanupCategory(workspaceURL: url)
         }
-    }
-
-    func failWorkspaceSelection(error: Error) {
-        alertErrorMessage = error.localizedDescription
-        isAlertErrorRequest = true
     }
 
     // MARK: - Cleanup Actions
@@ -361,16 +355,8 @@ class CleanerHomeViewModel {
         syncSelectedCategoryForDetails()
     }
 
-    func clearSelectedCategoryForDetails() {
-        selectedCategoryForDetails = nil
-    }
-
     func selectWorkspaceForDetails() {
         selectedWorkspaceCategoryForDetails = selectedWorkspaceCategory
-    }
-
-    func clearSelectedWorkspaceCategoryForDetails() {
-        selectedWorkspaceCategoryForDetails = nil
     }
 
     // MARK: - Setup

@@ -91,11 +91,6 @@ struct CleanerHomeView: View {
         .onDisappear(perform: {
             viewModel.stopMonitoring()
         })
-        .alert("Access Home Directory", isPresented: $viewModel.isAlertNotHomeDirectory, actions: {
-            Button(role: .close) { }
-        }, message: {
-            Text("Please select the Home directory")
-        })
         .onChange(of: viewModel.isAlertErrorRequest, { _, newValue in
             if newValue {
                 Task { @MainActor in

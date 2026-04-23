@@ -195,20 +195,6 @@ struct CleanerHomeViewModelTests {
         #expect(abs((context.viewModel.selectedCategoryForDetails?.size ?? 0) - 4.0) < 0.0001)
     }
 
-    @Test func clearSelectedCategoryForDetails_clearsDetailsSelection() {
-        let category = makeCategory(
-            name: "Flutter/pub-cache",
-            subcategories: [makeSubCategory(name: ".pub-cache", size: 1.0)]
-        )
-        let context = makeSUT()
-
-        context.viewModel.categories = [category]
-        context.viewModel.selectCategoryForDetails(category)
-        context.viewModel.clearSelectedCategoryForDetails()
-
-        #expect(context.viewModel.selectedCategoryForDetails == nil)
-    }
-
     @Test func selectWorkspace_updatesSelectedWorkspaceDisplayState() {
         let context = makeSUT()
         let workspaceURL = URL(filePath: "/Users/test/Projects/MyApp")
