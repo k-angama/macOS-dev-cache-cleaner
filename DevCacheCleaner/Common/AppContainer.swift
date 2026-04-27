@@ -26,6 +26,7 @@ class AppContainer {
     )
 
     private lazy var directoryAccessManager = DirectoryAccessManager(params: parameters)
+    private lazy var launchAtStartupManager = LaunchAtStartupManager()
 
     private lazy var homeAccessRepository: HomeAccessRepository = HomeAccessRepositoryImpl(
         manager: directoryAccessManager
@@ -33,6 +34,10 @@ class AppContainer {
 
     private lazy var workspaceAccessRepository: WorkspaceAccessRepository = WorkspaceAccessRepositoryImpl(
         manager: directoryAccessManager
+    )
+
+    private lazy var launchAtStartupRepository: LaunchAtStartupRepository = LaunchAtStartupRepositoryImpl(
+        manager: launchAtStartupManager
     )
 
     // MARK: - Stores
@@ -91,6 +96,14 @@ class AppContainer {
         workspaceAccessRepository: workspaceAccessRepository
     )
 
+    private lazy var resolveLaunchAtStartupStatusUseCase = ResolveLaunchAtStartupStatusUseCase(
+        launchAtStartupRepository: launchAtStartupRepository
+    )
+
+    private lazy var updateLaunchAtStartupStatusUseCase = UpdateLaunchAtStartupStatusUseCase(
+        launchAtStartupRepository: launchAtStartupRepository
+    )
+
     // MARK: - ViewModels
 
     lazy var cleanupProgressViewModel = CleanupProgressViewModel(
@@ -117,6 +130,8 @@ class AppContainer {
     lazy var settingsViewModel: SettingsViewModel = {
         SettingsViewModel(
             saveWorkspaceAccessUseCase: saveWorkspaceAccessUseCase,
+            resolveLaunchAtStartupStatusUseCase: resolveLaunchAtStartupStatusUseCase,
+            updateLaunchAtStartupStatusUseCase: updateLaunchAtStartupStatusUseCase,
             settingsStore: settingsStore
         )
     }()

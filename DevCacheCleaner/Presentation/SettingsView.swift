@@ -17,7 +17,7 @@ struct SettingsView: View {
 
             Divider()
 
-            launchAtLoginSection
+            launchAtStartupSection
 
             Spacer()
         }
@@ -88,12 +88,12 @@ struct SettingsView: View {
         }
     }
 
-    private var launchAtLoginSection: some View {
+    private var launchAtStartupSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Launch at Login")
+            Text("Launch at Startup")
                 .font(.headline)
 
-            Text("Open DevCacheCleaner automatically when you log in to your Mac.")
+            Text("Open DevCacheCleaner automatically at startup on this Mac.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -102,7 +102,7 @@ struct SettingsView: View {
                     Text("Start automatically")
                         .font(.subheadline)
 
-                    Text("UI only for now. Login item wiring comes next.")
+                    Text(viewModel.launchAtStartupStatusText)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -112,8 +112,8 @@ struct SettingsView: View {
                 Toggle(
                     "",
                     isOn: Binding(
-                        get: { viewModel.isLaunchAtLoginEnabled },
-                        set: { viewModel.setLaunchAtLoginEnabled($0) }
+                        get: { viewModel.isLaunchAtStartupEnabled },
+                        set: { viewModel.setLaunchAtStartupEnabled($0) }
                     )
                 )
                 .labelsHidden()
