@@ -54,7 +54,7 @@ struct DevCacheCleanerApp: App {
         .windowResizability(.contentSize)
 
         Window("Support DevCacheCleaner", id: Constants.WindowIds.support) {
-            SupportView()
+            SupportView(viewModel: container.supportViewModel)
                 .windowMinimizeBehavior(.disabled)
                 .containerBackground(.regularMaterial, for: .window)
         }

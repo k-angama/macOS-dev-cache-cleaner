@@ -151,4 +151,8 @@ class AppContainer {
             settingsStore: settingsStore
         )
     }()
+    
+    lazy var supportViewModel: SupportViewModel = {
+        SupportViewModel()
+    }()
 }
