@@ -26,6 +26,7 @@ class AppContainer {
     )
 
     private lazy var directoryAccessManager = DirectoryAccessManager(params: parameters)
+    private lazy var launchAtStartupManager = LaunchAtStartupManager()
 
     private lazy var homeAccessRepository: HomeAccessRepository = HomeAccessRepositoryImpl(
         manager: directoryAccessManager
@@ -35,9 +36,18 @@ class AppContainer {
         manager: directoryAccessManager
     )
 
+    private lazy var launchAtStartupRepository: LaunchAtStartupRepository = LaunchAtStartupRepositoryImpl(
+        manager: launchAtStartupManager
+    )
+
+    private lazy var launchAtStartupPromptRepository: LaunchAtStartupPromptRepository = LaunchAtStartupPromptRepositoryImpl(
+        parameters: parameters
+    )
+
     // MARK: - Stores
 
     private lazy var cleanupProgressStore = CleanupProgressStore()
+    private lazy var settingsStore = SettingsStore()
 
     // MARK: - Use Cases
 
@@ -90,6 +100,22 @@ class AppContainer {
         workspaceAccessRepository: workspaceAccessRepository
     )
 
+    private lazy var resolveLaunchAtStartupStatusUseCase = ResolveLaunchAtStartupStatusUseCase(
+        launchAtStartupRepository: launchAtStartupRepository
+    )
+
+    private lazy var updateLaunchAtStartupStatusUseCase = UpdateLaunchAtStartupStatusUseCase(
+        launchAtStartupRepository: launchAtStartupRepository
+    )
+
+    private lazy var resolveLaunchAtStartupPromptDismissalUseCase = ResolveLaunchAtStartupPromptDismissalUseCase(
+        launchAtStartupPromptRepository: launchAtStartupPromptRepository
+    )
+
+    private lazy var dismissLaunchAtStartupPromptUseCase = DismissLaunchAtStartupPromptUseCase(
+        launchAtStartupPromptRepository: launchAtStartupPromptRepository
+    )
+
     // MARK: - ViewModels
 
     lazy var cleanupProgressViewModel = CleanupProgressViewModel(
@@ -106,9 +132,23 @@ class AppContainer {
         refreshStorageCategoryUseCase: refreshStorageCategoryUseCase,
         loadStorageOverviewUseCase: loadStorageOverviewUseCase,
         loadWorkspaceCleanupCategoryUseCase: loadWorkspaceCleanupCategoryUseCase,
+        settingsStore: settingsStore,
         saveWorkspaceAccessUseCase: saveWorkspaceAccessUseCase,
         resolveWorkspaceAccessUseCase: resolveWorkspaceAccessUseCase,
+        resolveLaunchAtStartupStatusUseCase: resolveLaunchAtStartupStatusUseCase,
+        updateLaunchAtStartupStatusUseCase: updateLaunchAtStartupStatusUseCase,
+        resolveLaunchAtStartupPromptDismissalUseCase: resolveLaunchAtStartupPromptDismissalUseCase,
+        dismissLaunchAtStartupPromptUseCase: dismissLaunchAtStartupPromptUseCase,
         readDiskSpaceUseCase: readDiskSpaceUseCase,
         cleanupProgressStore: cleanupProgressStore
     )
+    
+    lazy var settingsViewModel: SettingsViewModel = {
+        SettingsViewModel(
+            saveWorkspaceAccessUseCase: saveWorkspaceAccessUseCase,
+            resolveLaunchAtStartupStatusUseCase: resolveLaunchAtStartupStatusUseCase,
+            updateLaunchAtStartupStatusUseCase: updateLaunchAtStartupStatusUseCase,
+            settingsStore: settingsStore
+        )
+    }()
 }

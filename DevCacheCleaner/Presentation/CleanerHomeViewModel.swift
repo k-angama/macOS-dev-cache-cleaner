@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Observation
 import SwiftUI
 
 @Observable
@@ -24,9 +25,19 @@ class CleanerHomeViewModel {
     var categoryRowStates: [UUID: StorageCategoryRowState] = [:]
     var isAlertErrorRequest: Bool = false
     var alertErrorMessage: String = "No access directory"
-    var isCleaning: Bool = false
+    var isCleaning: Bool = false {
+        didSet {
+            guard oldValue, isCleaning == false, hasPendingWorkspaceSelectionSync else {
+                return
+            }
+
+            hasPendingWorkspaceSelectionSync = false
+            syncWorkspaceSelectionFromSettingsStore()
+        }
+    }
     var selectedWorkspaceName: String?
     var selectedWorkspacePath: String?
+    var isLaunchAtStartupPromptVisible: Bool = false
     var selectedWorkspaceCategory: StorageCategoryEntity? {
         didSet {
             syncSelectedWorkspaceCategoryForDetails()
@@ -59,6 +70,8 @@ class CleanerHomeViewModel {
     private(set) var storageCategorySelected: StorageCategoryEntity?
     private var selectedWorkspaceURL: URL?
     private var isWorkspaceCleanupSelected = false
+    private var hasPendingWorkspaceSelectionSync = false
+    private var didFinishInitialOverviewLoad = false
 
     // MARK: - UseCase
 
@@ -71,8 +84,13 @@ class CleanerHomeViewModel {
     private let refreshStorageCategoryUseCase: RefreshStorageCategoryUseCase
     private let loadStorageOverviewUseCase: LoadStorageOverviewUseCase
     private let loadWorkspaceCleanupCategoryUseCase: LoadWorkspaceCleanupCategoryUseCase
+    private let settingsStore: SettingsStore
     private let saveWorkspaceAccessUseCase: SaveWorkspaceAccessUseCase
     private let resolveWorkspaceAccessUseCase: ResolveWorkspaceAccessUseCase
+    private let resolveLaunchAtStartupStatusUseCase: ResolveLaunchAtStartupStatusUseCase
+    private let updateLaunchAtStartupStatusUseCase: UpdateLaunchAtStartupStatusUseCase
+    private let resolveLaunchAtStartupPromptDismissalUseCase: ResolveLaunchAtStartupPromptDismissalUseCase
+    private let dismissLaunchAtStartupPromptUseCase: DismissLaunchAtStartupPromptUseCase
     private let readDiskSpaceUseCase: ReadDiskSpaceUseCase
     
     // MARK: - Store
@@ -91,8 +109,13 @@ class CleanerHomeViewModel {
         refreshStorageCategoryUseCase: RefreshStorageCategoryUseCase,
         loadStorageOverviewUseCase: LoadStorageOverviewUseCase,
         loadWorkspaceCleanupCategoryUseCase: LoadWorkspaceCleanupCategoryUseCase,
+        settingsStore: SettingsStore,
         saveWorkspaceAccessUseCase: SaveWorkspaceAccessUseCase,
         resolveWorkspaceAccessUseCase: ResolveWorkspaceAccessUseCase,
+        resolveLaunchAtStartupStatusUseCase: ResolveLaunchAtStartupStatusUseCase,
+        updateLaunchAtStartupStatusUseCase: UpdateLaunchAtStartupStatusUseCase,
+        resolveLaunchAtStartupPromptDismissalUseCase: ResolveLaunchAtStartupPromptDismissalUseCase,
+        dismissLaunchAtStartupPromptUseCase: DismissLaunchAtStartupPromptUseCase,
         readDiskSpaceUseCase: ReadDiskSpaceUseCase,
         cleanupProgressStore: CleanupProgressStore
     ) {
@@ -105,8 +128,13 @@ class CleanerHomeViewModel {
         self.refreshStorageCategoryUseCase = refreshStorageCategoryUseCase
         self.loadStorageOverviewUseCase = loadStorageOverviewUseCase
         self.loadWorkspaceCleanupCategoryUseCase = loadWorkspaceCleanupCategoryUseCase
+        self.settingsStore = settingsStore
         self.saveWorkspaceAccessUseCase = saveWorkspaceAccessUseCase
         self.resolveWorkspaceAccessUseCase = resolveWorkspaceAccessUseCase
+        self.resolveLaunchAtStartupStatusUseCase = resolveLaunchAtStartupStatusUseCase
+        self.updateLaunchAtStartupStatusUseCase = updateLaunchAtStartupStatusUseCase
+        self.resolveLaunchAtStartupPromptDismissalUseCase = resolveLaunchAtStartupPromptDismissalUseCase
+        self.dismissLaunchAtStartupPromptUseCase = dismissLaunchAtStartupPromptUseCase
         self.readDiskSpaceUseCase = readDiskSpaceUseCase
         self.cleanupProgressStore = cleanupProgressStore
         setup()
@@ -152,12 +180,18 @@ class CleanerHomeViewModel {
         if saveWorkspaceAccessUseCase.execute(url: url) == false {
             alertErrorMessage = "Unable to save workspace access."
             isAlertErrorRequest = true
+            return
         }
 
-        loadSelectedWorkspace(url)
+        settingsStore.selectedWorkspaceURL = url
+        applyWorkspaceSelection(url)
     }
 
-    private func loadSelectedWorkspace(_ url: URL) {
+    private func applyWorkspaceSelection(_ url: URL) {
+        guard selectedWorkspaceURL?.path != url.path else {
+            return
+        }
+
         selectedWorkspaceName = url.lastPathComponent
         selectedWorkspacePath = url.path
         selectedWorkspaceURL = url
@@ -346,6 +380,32 @@ class CleanerHomeViewModel {
             }
         }
     }
+
+    func dismissLaunchAtStartupPrompt() {
+        dismissLaunchAtStartupPromptUseCase.execute()
+        isLaunchAtStartupPromptVisible = false
+    }
+
+    func enableLaunchAtStartup() {
+        do {
+            try updateLaunchAtStartupStatusUseCase.execute(isEnabled: true)
+
+            switch resolveLaunchAtStartupStatusUseCase.execute() {
+            case .enabled:
+                dismissLaunchAtStartupPrompt()
+            case .requiresApproval:
+                dismissLaunchAtStartupPrompt()
+                alertErrorMessage = "Approval is required in System Settings > Login Items."
+                isAlertErrorRequest = true
+            case .disabled, .unavailable:
+                alertErrorMessage = "Unable to enable automatic startup."
+                isAlertErrorRequest = true
+            }
+        } catch {
+            alertErrorMessage = error.localizedDescription
+            isAlertErrorRequest = true
+        }
+    }
     
     func stopMonitoring() {
         observeDiskChangesUseCase.stop()
@@ -369,6 +429,7 @@ class CleanerHomeViewModel {
         categoryRowStates.removeAll()
         resolveHomeURL()
         resolveWorkspaceURL()
+        observeSettingsStore()
         updateDiskSpace()
     }
 
@@ -388,13 +449,17 @@ class CleanerHomeViewModel {
 
         switch event.phase {
         case .started:
+            didFinishInitialOverviewLoad = false
+            isLaunchAtStartupPromptVisible = false
             setAllCategoryRowStates(.loading)
         case .categoryUpdated:
             if let updatedCategoryID = event.updatedCategoryID {
                 setCategoryRowState(.ready, for: updatedCategoryID)
             }
         case .finished:
+            didFinishInitialOverviewLoad = true
             setAllCategoryRowStates(.ready)
+            updateLaunchAtStartupPromptVisibility()
         }
     }
 
@@ -413,17 +478,72 @@ class CleanerHomeViewModel {
     }
 
     private func resolveWorkspaceURL() {
-        guard let workspaceURL = resolveWorkspaceAccessUseCase.execute() else {
+        guard let workspaceURL = settingsStore.selectedWorkspaceURL
+                ?? resolveWorkspaceAccessUseCase.execute()
+        else {
             return
         }
 
-        loadSelectedWorkspace(workspaceURL)
+        settingsStore.selectedWorkspaceURL = workspaceURL
+        applyWorkspaceSelection(workspaceURL)
+    }
+
+    private func syncWorkspaceSelectionFromSettingsStore() {
+        guard let workspaceURL = settingsStore.selectedWorkspaceURL else {
+            return
+        }
+
+        applyWorkspaceSelection(workspaceURL)
+    }
+
+    private func observeSettingsStore() {
+        withObservationTracking {
+            _ = settingsStore.selectedWorkspaceURL
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.handleSettingsStoreChange()
+                self?.observeSettingsStore()
+            }
+        }
+    }
+
+    @MainActor
+    private func handleSettingsStoreChange() {
+        guard let workspaceURL = settingsStore.selectedWorkspaceURL else {
+            return
+        }
+
+        guard selectedWorkspaceURL?.path != workspaceURL.path else {
+            return
+        }
+
+        guard isCleaning == false else {
+            hasPendingWorkspaceSelectionSync = true
+            return
+        }
+
+        applyWorkspaceSelection(workspaceURL)
     }
 
     private func updateDiskSpace() {
         let diskSpace = readDiskSpaceUseCase.execute()
         totalSize = diskSpace.totalSize
         freeSize = diskSpace.freeSize
+    }
+
+    private func updateLaunchAtStartupPromptVisibility() {
+        guard isAccessUserDirectory, didFinishInitialOverviewLoad else {
+            isLaunchAtStartupPromptVisible = false
+            return
+        }
+
+        guard resolveLaunchAtStartupPromptDismissalUseCase.execute() == false else {
+            isLaunchAtStartupPromptVisible = false
+            return
+        }
+
+        isLaunchAtStartupPromptVisible =
+            resolveLaunchAtStartupStatusUseCase.execute() != .enabled
     }
 
     // MARK: - Cleanup Execution

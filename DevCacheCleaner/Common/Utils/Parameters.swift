@@ -10,6 +10,7 @@ import Foundation
 protocol Parameters {
     var homeFolderBookmark: Data? { get set }
     var workspaceFolderBookmark: Data? { get set }
+    var didDismissLaunchAtStartupPrompt: Bool { get set }
 }
 
 struct ParametersImpl: Parameters {
@@ -17,6 +18,7 @@ struct ParametersImpl: Parameters {
     struct Keys {
         static let homeFolderBookmark = "com.angama.home-folder-bookmark"
         static let workspaceFolderBookmark = "com.angama.workspace-folder-bookmark"
+        static let didDismissLaunchAtStartupPrompt = "com.angama.did-dismiss-launch-at-startup-prompt"
     }
     
     var homeFolderBookmark: Data? {
@@ -34,6 +36,15 @@ struct ParametersImpl: Parameters {
         }
         set {
             set(newValue, forKey: Keys.workspaceFolderBookmark)
+        }
+    }
+
+    var didDismissLaunchAtStartupPrompt: Bool {
+        get {
+            UserDefaults.standard.bool(forKey: Keys.didDismissLaunchAtStartupPrompt)
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: Keys.didDismissLaunchAtStartupPrompt)
         }
     }
 

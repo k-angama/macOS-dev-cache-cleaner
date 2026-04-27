@@ -19,6 +19,17 @@ struct CleanerHomeView: View {
         VStack(alignment: .leading, spacing: 18) {
             if viewModel.isAccessUserDirectory {
                 VStack(alignment: .leading, spacing: 18) {
+                    if viewModel.isLaunchAtStartupPromptVisible {
+                        LaunchAtStartupPromptView(
+                            onEnable: {
+                                viewModel.enableLaunchAtStartup()
+                            },
+                            onNotNow: {
+                                viewModel.dismissLaunchAtStartupPrompt()
+                            }
+                        )
+                    }
+
                     StorageUsageView(
                         total: viewModel.totalSize,
                         free: viewModel.freeSize,
@@ -72,7 +83,12 @@ struct CleanerHomeView: View {
                 Menu {
                     Button("About DevCacheCleaner") {
                         openWindow(
-                            id: "about-dev-cache-cleaner",
+                            id: Constants.WindowIds.about,
+                        )
+                    }
+                    Button("Settings") {
+                        openWindow(
+                            id: Constants.WindowIds.settings,
                         )
                     }
                     Divider()
@@ -98,7 +114,7 @@ struct CleanerHomeView: View {
                     AlertPresenter.showError(
                         title: "Error", message: viewModel.alertErrorMessage
                     )
-                    viewModel.isAlertCleanCache = false
+                    viewModel.isAlertErrorRequest = false
                 }
             }
         })
