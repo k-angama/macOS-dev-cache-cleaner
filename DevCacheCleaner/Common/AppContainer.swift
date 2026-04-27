@@ -40,6 +40,10 @@ class AppContainer {
         manager: launchAtStartupManager
     )
 
+    private lazy var launchAtStartupPromptRepository: LaunchAtStartupPromptRepository = LaunchAtStartupPromptRepositoryImpl(
+        parameters: parameters
+    )
+
     // MARK: - Stores
 
     private lazy var cleanupProgressStore = CleanupProgressStore()
@@ -104,6 +108,14 @@ class AppContainer {
         launchAtStartupRepository: launchAtStartupRepository
     )
 
+    private lazy var resolveLaunchAtStartupPromptDismissalUseCase = ResolveLaunchAtStartupPromptDismissalUseCase(
+        launchAtStartupPromptRepository: launchAtStartupPromptRepository
+    )
+
+    private lazy var dismissLaunchAtStartupPromptUseCase = DismissLaunchAtStartupPromptUseCase(
+        launchAtStartupPromptRepository: launchAtStartupPromptRepository
+    )
+
     // MARK: - ViewModels
 
     lazy var cleanupProgressViewModel = CleanupProgressViewModel(
@@ -123,6 +135,10 @@ class AppContainer {
         settingsStore: settingsStore,
         saveWorkspaceAccessUseCase: saveWorkspaceAccessUseCase,
         resolveWorkspaceAccessUseCase: resolveWorkspaceAccessUseCase,
+        resolveLaunchAtStartupStatusUseCase: resolveLaunchAtStartupStatusUseCase,
+        updateLaunchAtStartupStatusUseCase: updateLaunchAtStartupStatusUseCase,
+        resolveLaunchAtStartupPromptDismissalUseCase: resolveLaunchAtStartupPromptDismissalUseCase,
+        dismissLaunchAtStartupPromptUseCase: dismissLaunchAtStartupPromptUseCase,
         readDiskSpaceUseCase: readDiskSpaceUseCase,
         cleanupProgressStore: cleanupProgressStore
     )

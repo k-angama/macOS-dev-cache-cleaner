@@ -37,6 +37,7 @@ class CleanerHomeViewModel {
     }
     var selectedWorkspaceName: String?
     var selectedWorkspacePath: String?
+    var isLaunchAtStartupPromptVisible: Bool = false
     var selectedWorkspaceCategory: StorageCategoryEntity? {
         didSet {
             syncSelectedWorkspaceCategoryForDetails()
@@ -70,6 +71,7 @@ class CleanerHomeViewModel {
     private var selectedWorkspaceURL: URL?
     private var isWorkspaceCleanupSelected = false
     private var hasPendingWorkspaceSelectionSync = false
+    private var didFinishInitialOverviewLoad = false
 
     // MARK: - UseCase
 
@@ -85,6 +87,10 @@ class CleanerHomeViewModel {
     private let settingsStore: SettingsStore
     private let saveWorkspaceAccessUseCase: SaveWorkspaceAccessUseCase
     private let resolveWorkspaceAccessUseCase: ResolveWorkspaceAccessUseCase
+    private let resolveLaunchAtStartupStatusUseCase: ResolveLaunchAtStartupStatusUseCase
+    private let updateLaunchAtStartupStatusUseCase: UpdateLaunchAtStartupStatusUseCase
+    private let resolveLaunchAtStartupPromptDismissalUseCase: ResolveLaunchAtStartupPromptDismissalUseCase
+    private let dismissLaunchAtStartupPromptUseCase: DismissLaunchAtStartupPromptUseCase
     private let readDiskSpaceUseCase: ReadDiskSpaceUseCase
     
     // MARK: - Store
@@ -106,6 +112,10 @@ class CleanerHomeViewModel {
         settingsStore: SettingsStore,
         saveWorkspaceAccessUseCase: SaveWorkspaceAccessUseCase,
         resolveWorkspaceAccessUseCase: ResolveWorkspaceAccessUseCase,
+        resolveLaunchAtStartupStatusUseCase: ResolveLaunchAtStartupStatusUseCase,
+        updateLaunchAtStartupStatusUseCase: UpdateLaunchAtStartupStatusUseCase,
+        resolveLaunchAtStartupPromptDismissalUseCase: ResolveLaunchAtStartupPromptDismissalUseCase,
+        dismissLaunchAtStartupPromptUseCase: DismissLaunchAtStartupPromptUseCase,
         readDiskSpaceUseCase: ReadDiskSpaceUseCase,
         cleanupProgressStore: CleanupProgressStore
     ) {
@@ -121,6 +131,10 @@ class CleanerHomeViewModel {
         self.settingsStore = settingsStore
         self.saveWorkspaceAccessUseCase = saveWorkspaceAccessUseCase
         self.resolveWorkspaceAccessUseCase = resolveWorkspaceAccessUseCase
+        self.resolveLaunchAtStartupStatusUseCase = resolveLaunchAtStartupStatusUseCase
+        self.updateLaunchAtStartupStatusUseCase = updateLaunchAtStartupStatusUseCase
+        self.resolveLaunchAtStartupPromptDismissalUseCase = resolveLaunchAtStartupPromptDismissalUseCase
+        self.dismissLaunchAtStartupPromptUseCase = dismissLaunchAtStartupPromptUseCase
         self.readDiskSpaceUseCase = readDiskSpaceUseCase
         self.cleanupProgressStore = cleanupProgressStore
         setup()
@@ -366,6 +380,32 @@ class CleanerHomeViewModel {
             }
         }
     }
+
+    func dismissLaunchAtStartupPrompt() {
+        dismissLaunchAtStartupPromptUseCase.execute()
+        isLaunchAtStartupPromptVisible = false
+    }
+
+    func enableLaunchAtStartup() {
+        do {
+            try updateLaunchAtStartupStatusUseCase.execute(isEnabled: true)
+
+            switch resolveLaunchAtStartupStatusUseCase.execute() {
+            case .enabled:
+                dismissLaunchAtStartupPrompt()
+            case .requiresApproval:
+                dismissLaunchAtStartupPrompt()
+                alertErrorMessage = "Approval is required in System Settings > Login Items."
+                isAlertErrorRequest = true
+            case .disabled, .unavailable:
+                alertErrorMessage = "Unable to enable automatic startup."
+                isAlertErrorRequest = true
+            }
+        } catch {
+            alertErrorMessage = error.localizedDescription
+            isAlertErrorRequest = true
+        }
+    }
     
     func stopMonitoring() {
         observeDiskChangesUseCase.stop()
@@ -409,13 +449,17 @@ class CleanerHomeViewModel {
 
         switch event.phase {
         case .started:
+            didFinishInitialOverviewLoad = false
+            isLaunchAtStartupPromptVisible = false
             setAllCategoryRowStates(.loading)
         case .categoryUpdated:
             if let updatedCategoryID = event.updatedCategoryID {
                 setCategoryRowState(.ready, for: updatedCategoryID)
             }
         case .finished:
+            didFinishInitialOverviewLoad = true
             setAllCategoryRowStates(.ready)
+            updateLaunchAtStartupPromptVisibility()
         }
     }
 
@@ -485,6 +529,21 @@ class CleanerHomeViewModel {
         let diskSpace = readDiskSpaceUseCase.execute()
         totalSize = diskSpace.totalSize
         freeSize = diskSpace.freeSize
+    }
+
+    private func updateLaunchAtStartupPromptVisibility() {
+        guard isAccessUserDirectory, didFinishInitialOverviewLoad else {
+            isLaunchAtStartupPromptVisible = false
+            return
+        }
+
+        guard resolveLaunchAtStartupPromptDismissalUseCase.execute() == false else {
+            isLaunchAtStartupPromptVisible = false
+            return
+        }
+
+        isLaunchAtStartupPromptVisible =
+            resolveLaunchAtStartupStatusUseCase.execute() != .enabled
     }
 
     // MARK: - Cleanup Execution

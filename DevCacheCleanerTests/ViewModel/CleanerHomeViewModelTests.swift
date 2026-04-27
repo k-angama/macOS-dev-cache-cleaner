@@ -293,6 +293,62 @@ struct CleanerHomeViewModelTests {
         #expect(context.workspaceAccessRepository.saveCallCount == 0)
     }
 
+    @Test func startupPrompt_whenInitialOverviewFinishesAndStartupIsDisabled_showsPrompt() async {
+        let context = makeSUT(
+            resolvedURL: testHomeURL,
+            launchAtStartupStatus: .disabled
+        )
+
+        let didShowPrompt = await waitUntil(timeout: 2) {
+            context.viewModel.isLaunchAtStartupPromptVisible
+        }
+
+        #expect(didShowPrompt)
+    }
+
+    @Test func dismissLaunchAtStartupPrompt_hidesPromptAndPersistsDismissal() async {
+        let context = makeSUT(
+            resolvedURL: testHomeURL,
+            launchAtStartupStatus: .disabled
+        )
+
+        let didShowPrompt = await waitUntil(timeout: 2) {
+            context.viewModel.isLaunchAtStartupPromptVisible
+        }
+
+        context.viewModel.dismissLaunchAtStartupPrompt()
+
+        #expect(didShowPrompt)
+        #expect(context.viewModel.isLaunchAtStartupPromptVisible == false)
+        #expect(context.launchAtStartupPromptRepository.promptDismissed)
+        #expect(context.launchAtStartupPromptRepository.setPromptDismissedCallCount == 1)
+    }
+
+    @Test func enableLaunchAtStartup_whenApprovalIsRequired_hidesPromptAndShowsAlert() async {
+        let context = makeSUT(
+            resolvedURL: testHomeURL,
+            launchAtStartupStatus: .disabled
+        )
+        context.launchAtStartupRepository.nextResolvedStatusAfterUpdate = .requiresApproval
+
+        let didShowPrompt = await waitUntil(timeout: 2) {
+            context.viewModel.isLaunchAtStartupPromptVisible
+        }
+
+        context.viewModel.enableLaunchAtStartup()
+
+        #expect(didShowPrompt)
+        #expect(context.launchAtStartupRepository.updateCallCount == 1)
+        #expect(context.launchAtStartupRepository.updatedIsEnabled == true)
+        #expect(context.viewModel.isLaunchAtStartupPromptVisible == false)
+        #expect(context.launchAtStartupPromptRepository.promptDismissed)
+        #expect(context.viewModel.isAlertErrorRequest)
+        #expect(
+            context.viewModel.alertErrorMessage ==
+            "Approval is required in System Settings > Login Items."
+        )
+    }
+
     @Test func startCleanup_forWorkspace_updatesWorkspaceCategoryAndResetsState() async {
         let context = makeSUT(totalDiskCapacity: 500, availableDiskCapacity: 200)
         let workspaceURL = URL(filePath: "/Users/test/Projects/MyApp")
@@ -336,6 +392,7 @@ private func makeSUT(
     resolvedWorkspaceURL: URL? = nil,
     workspaceCleanupDirectories: [String] = [],
     workspaceDirectorySizes: [String: CGFloat] = [:],
+    launchAtStartupStatus: LaunchAtStartupStatusEntity = .enabled,
     totalDiskCapacity: CGFloat = 0,
     availableDiskCapacity: CGFloat = 0
 ) -> (
@@ -344,6 +401,8 @@ private func makeSUT(
     scannerRepository: DiskScannerRepositoryMock,
     settingsStore: SettingsStore,
     workspaceAccessRepository: WorkspaceAccessRepositoryMock,
+    launchAtStartupRepository: LaunchAtStartupRepositoryMock,
+    launchAtStartupPromptRepository: LaunchAtStartupPromptRepositoryMock,
     homeAccessRepository: HomeAccessRepositoryMock,
     monitoringRepository: DiskMonitoringRepositoryMock,
     cleanupProgressStore: CleanupProgressStore
@@ -361,6 +420,11 @@ private func makeSUT(
 
     let workspaceAccessRepository = WorkspaceAccessRepositoryMock()
     workspaceAccessRepository.resolvedURL = resolvedWorkspaceURL
+
+    let launchAtStartupRepository = LaunchAtStartupRepositoryMock()
+    launchAtStartupRepository.resolvedStatus = launchAtStartupStatus
+
+    let launchAtStartupPromptRepository = LaunchAtStartupPromptRepositoryMock()
 
     let homeAccessRepository = HomeAccessRepositoryMock()
     homeAccessRepository.shouldSaveHomeURL = shouldSaveHomeURL
@@ -395,6 +459,18 @@ private func makeSUT(
     let resolveWorkspaceAccessUseCase = ResolveWorkspaceAccessUseCase(
         workspaceAccessRepository: workspaceAccessRepository
     )
+    let resolveLaunchAtStartupStatusUseCase = ResolveLaunchAtStartupStatusUseCase(
+        launchAtStartupRepository: launchAtStartupRepository
+    )
+    let updateLaunchAtStartupStatusUseCase = UpdateLaunchAtStartupStatusUseCase(
+        launchAtStartupRepository: launchAtStartupRepository
+    )
+    let resolveLaunchAtStartupPromptDismissalUseCase = ResolveLaunchAtStartupPromptDismissalUseCase(
+        launchAtStartupPromptRepository: launchAtStartupPromptRepository
+    )
+    let dismissLaunchAtStartupPromptUseCase = DismissLaunchAtStartupPromptUseCase(
+        launchAtStartupPromptRepository: launchAtStartupPromptRepository
+    )
     let readDiskSpaceUseCase = ReadDiskSpaceUseCase(diskRepository: diskRepository)
     let settingsStore = SettingsStore()
 
@@ -411,6 +487,10 @@ private func makeSUT(
         settingsStore: settingsStore,
         saveWorkspaceAccessUseCase: saveWorkspaceAccessUseCase,
         resolveWorkspaceAccessUseCase: resolveWorkspaceAccessUseCase,
+        resolveLaunchAtStartupStatusUseCase: resolveLaunchAtStartupStatusUseCase,
+        updateLaunchAtStartupStatusUseCase: updateLaunchAtStartupStatusUseCase,
+        resolveLaunchAtStartupPromptDismissalUseCase: resolveLaunchAtStartupPromptDismissalUseCase,
+        dismissLaunchAtStartupPromptUseCase: dismissLaunchAtStartupPromptUseCase,
         readDiskSpaceUseCase: readDiskSpaceUseCase,
         cleanupProgressStore: cleanupProgressStore
     )
@@ -421,6 +501,8 @@ private func makeSUT(
         scannerRepository: scannerRepository,
         settingsStore: settingsStore,
         workspaceAccessRepository: workspaceAccessRepository,
+        launchAtStartupRepository: launchAtStartupRepository,
+        launchAtStartupPromptRepository: launchAtStartupPromptRepository,
         homeAccessRepository: homeAccessRepository,
         monitoringRepository: monitoringRepository,
         cleanupProgressStore: cleanupProgressStore
