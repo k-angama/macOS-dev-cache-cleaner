@@ -11,24 +11,6 @@ struct SupportView: View {
     
     @State var viewModel: SupportViewModel
 
-    private let tipOptions: [SupportTipOption] = [
-        .init(
-            title: "Coffee",
-            price: "$1.99",
-            message: "A small thank-you if DevCacheCleaner saved you a little space."
-        ),
-        .init(
-            title: "Lunch",
-            price: "$4.99",
-            message: "A stronger show of support for ongoing updates and polish."
-        ),
-        .init(
-            title: "Sponsor",
-            price: "$9.99",
-            message: "A generous tip if the app has become part of your developer workflow."
-        )
-    ]
-
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             header
@@ -36,21 +18,56 @@ struct SupportView: View {
             Text("Choose a tip option")
                 .font(.headline)
 
-            VStack(spacing: 12) {
-                ForEach(tipOptions) { option in
-                    SupportTipCard(option: option)
+            if viewModel.isLoadingProducts && viewModel.tipProducts.isEmpty {
+                ProgressView("Loading tip options...")
+                    .controlSize(.regular)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 16)
+            } else if viewModel.tipProducts.isEmpty {
+                Text("Tip options are currently unavailable.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(viewModel.tipProducts) { option in
+                        SupportTipCard(
+                            option: option,
+                            isDisabled: viewModel.purchasingProductID != nil,
+                            isPurchasing: viewModel.purchasingProductID == option.id,
+                            action: {
+                                Task {
+                                    await viewModel.purchaseTip(productID: option.id)
+                                }
+                            }
+                        )
+                    }
                 }
             }
 
             Divider()
 
-            Text("Tip purchases will be wired with the App Store purchase flow next.")
+            Text(viewModel.footerMessage)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(24)
         .frame(width: 430)
+        .task {
+            await viewModel.loadProductsIfNeeded()
+        }
+        .alert(
+            viewModel.alertTitle,
+            isPresented: Binding(
+                get: { viewModel.isAlertPresented },
+                set: { viewModel.isAlertPresented = $0 }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(viewModel.alertMessage)
+        }
     }
 
     private var header: some View {
@@ -80,5 +97,26 @@ struct SupportView: View {
 
 #Preview {
     let container = AppContainer()
-    SupportView(viewModel: container.supportViewModel)
+    let viewModel = container.supportViewModel
+    viewModel.tipProducts = [
+        .init(
+            id: Constants.SupportTips.coffee,
+            title: "Coffee Tip",
+            message: "A small thank-you if DevCacheCleaner saved you a little space.",
+            displayPrice: "$1.99"
+        ),
+        .init(
+            id: Constants.SupportTips.lunch,
+            title: "Lunch Tip",
+            message: "A stronger show of support for ongoing updates and polish.",
+            displayPrice: "$4.99"
+        ),
+        .init(
+            id: Constants.SupportTips.sponsor,
+            title: "Sponsor Tip",
+            message: "A generous tip if the app has become part of your developer workflow.",
+            displayPrice: "$9.99"
+        )
+    ]
+    return SupportView(viewModel: viewModel)
 }
