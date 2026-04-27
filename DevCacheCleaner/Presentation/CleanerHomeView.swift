@@ -81,6 +81,11 @@ struct CleanerHomeView: View {
             HStack {
                 Spacer()
                 Menu {
+                    Button("Help") {
+                        openWindow(
+                            id: Constants.WindowIds.help,
+                        )
+                    }
                     Button("About DevCacheCleaner") {
                         openWindow(
                             id: Constants.WindowIds.about,

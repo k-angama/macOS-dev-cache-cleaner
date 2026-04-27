@@ -44,6 +44,14 @@ struct DevCacheCleanerApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
+
+        Window("Help DevCacheCleaner", id: Constants.WindowIds.help) {
+            HelpView()
+                .windowMinimizeBehavior(.disabled)
+                .containerBackground(.regularMaterial, for: .window)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
         
         Window("Settings DevCacheCleaner", id: Constants.WindowIds.settings) {
             SettingsView(viewModel: container.settingsViewModel)
