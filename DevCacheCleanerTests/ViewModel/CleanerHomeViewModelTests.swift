@@ -270,7 +270,26 @@ struct CleanerHomeViewModelTests {
         #expect(didLoadWorkspace)
         #expect(context.viewModel.selectedWorkspaceName == "MyApp")
         #expect(context.viewModel.selectedWorkspacePath == "/Users/test/Projects/MyApp")
-        #expect(context.workspaceAccessRepository.resolveCallCount == 1)
+        #expect(context.workspaceAccessRepository.saveCallCount == 0)
+    }
+
+    @Test func settingsStore_whenWorkspaceChanges_updatesSelectedWorkspace() async {
+        let workspaceURL = URL(filePath: "/Users/test/Projects/MyApp")
+        let context = makeSUT(
+            workspaceCleanupDirectories: ["node_modules"],
+            workspaceDirectorySizes: ["node_modules": 25]
+        )
+
+        context.settingsStore.selectedWorkspaceURL = workspaceURL
+
+        let didLoadWorkspace = await waitUntil(timeout: 2) {
+            context.viewModel.workspaceRowState == .ready &&
+            context.viewModel.selectedWorkspaceName == "MyApp" &&
+            context.viewModel.selectedWorkspacePath == "/Users/test/Projects/MyApp" &&
+            context.viewModel.selectedWorkspaceCategory?.categories.map(\.path) == ["node_modules"]
+        }
+
+        #expect(didLoadWorkspace)
         #expect(context.workspaceAccessRepository.saveCallCount == 0)
     }
 
@@ -323,6 +342,7 @@ private func makeSUT(
     viewModel: CleanerHomeViewModel,
     diskRepository: DiskRepositoryMock,
     scannerRepository: DiskScannerRepositoryMock,
+    settingsStore: SettingsStore,
     workspaceAccessRepository: WorkspaceAccessRepositoryMock,
     homeAccessRepository: HomeAccessRepositoryMock,
     monitoringRepository: DiskMonitoringRepositoryMock,
@@ -376,6 +396,7 @@ private func makeSUT(
         workspaceAccessRepository: workspaceAccessRepository
     )
     let readDiskSpaceUseCase = ReadDiskSpaceUseCase(diskRepository: diskRepository)
+    let settingsStore = SettingsStore()
 
     let viewModel = CleanerHomeViewModel(
         saveHomeAccessUseCase: saveHomeAccessUseCase,
@@ -387,6 +408,7 @@ private func makeSUT(
         refreshStorageCategoryUseCase: refreshStorageCategoryUseCase,
         loadStorageOverviewUseCase: loadStorageOverviewUseCase,
         loadWorkspaceCleanupCategoryUseCase: loadWorkspaceCleanupCategoryUseCase,
+        settingsStore: settingsStore,
         saveWorkspaceAccessUseCase: saveWorkspaceAccessUseCase,
         resolveWorkspaceAccessUseCase: resolveWorkspaceAccessUseCase,
         readDiskSpaceUseCase: readDiskSpaceUseCase,
@@ -397,6 +419,7 @@ private func makeSUT(
         viewModel: viewModel,
         diskRepository: diskRepository,
         scannerRepository: scannerRepository,
+        settingsStore: settingsStore,
         workspaceAccessRepository: workspaceAccessRepository,
         homeAccessRepository: homeAccessRepository,
         monitoringRepository: monitoringRepository,

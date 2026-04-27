@@ -38,6 +38,7 @@ class AppContainer {
     // MARK: - Stores
 
     private lazy var cleanupProgressStore = CleanupProgressStore()
+    private lazy var settingsStore = SettingsStore()
 
     // MARK: - Use Cases
 
@@ -106,9 +107,17 @@ class AppContainer {
         refreshStorageCategoryUseCase: refreshStorageCategoryUseCase,
         loadStorageOverviewUseCase: loadStorageOverviewUseCase,
         loadWorkspaceCleanupCategoryUseCase: loadWorkspaceCleanupCategoryUseCase,
+        settingsStore: settingsStore,
         saveWorkspaceAccessUseCase: saveWorkspaceAccessUseCase,
         resolveWorkspaceAccessUseCase: resolveWorkspaceAccessUseCase,
         readDiskSpaceUseCase: readDiskSpaceUseCase,
         cleanupProgressStore: cleanupProgressStore
     )
+    
+    lazy var settingsViewModel: SettingsViewModel = {
+        SettingsViewModel(
+            saveWorkspaceAccessUseCase: saveWorkspaceAccessUseCase,
+            settingsStore: settingsStore
+        )
+    }()
 }

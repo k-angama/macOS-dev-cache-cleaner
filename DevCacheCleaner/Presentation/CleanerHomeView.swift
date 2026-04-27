@@ -72,7 +72,12 @@ struct CleanerHomeView: View {
                 Menu {
                     Button("About DevCacheCleaner") {
                         openWindow(
-                            id: "about-dev-cache-cleaner",
+                            id: Constants.WindowIds.about,
+                        )
+                    }
+                    Button("Settings") {
+                        openWindow(
+                            id: Constants.WindowIds.settings,
                         )
                     }
                     Divider()

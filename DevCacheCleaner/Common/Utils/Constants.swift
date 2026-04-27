@@ -103,8 +103,9 @@ struct Constants {
     }
     
     struct WindowIds {
-        static let cleanupProgress = "cleanup-progress"
+        static let cleanupProgress = "cleanup-progress-dev-cache-cleaner"
         static let about = "about-dev-cache-cleaner"
+        static let settings = "about-dev-cache-settings"
     }
     
     struct About {
