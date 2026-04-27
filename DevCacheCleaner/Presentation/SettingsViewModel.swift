@@ -13,6 +13,7 @@ class SettingsViewModel {
     var alertErrorMessage: String = "Unable to save workspace access."
     var workspacePath: String?
     var workspaceDirectoryURL: URL?
+    var isLaunchAtLoginEnabled: Bool = false
 
     private let settingsStore: SettingsStore
     private let saveWorkspaceAccessUseCase: SaveWorkspaceAccessUseCase
@@ -29,6 +30,7 @@ class SettingsViewModel {
     func setup() {
         workspaceDirectoryURL = settingsStore.selectedWorkspaceURL
         workspacePath = settingsStore.selectedWorkspaceURL?.path
+        isLaunchAtLoginEnabled = settingsStore.isLaunchAtLoginEnabled
     }
 
     func selectWorkspace(url: URL?) {
@@ -43,5 +45,10 @@ class SettingsViewModel {
         workspaceDirectoryURL = url
         workspacePath = url.path
         settingsStore.selectedWorkspaceURL = url
+    }
+
+    func setLaunchAtLoginEnabled(_ isEnabled: Bool) {
+        isLaunchAtLoginEnabled = isEnabled
+        settingsStore.isLaunchAtLoginEnabled = isEnabled
     }
 }

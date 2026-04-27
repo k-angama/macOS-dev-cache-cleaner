@@ -13,54 +13,17 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Workspace")
-                    .font(.headline)
+            workspaceSection
 
-                Text(
-                    viewModel.workspacePath == nil ?
-                    "Choose the workspace folder used for project cleanup." :
-                    "Replace the currently selected workspace folder."
-                )
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+            Divider()
 
-                VStack(alignment: .leading, spacing: 8) {
-
-                    HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: "folder.fill")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 2)
-
-                        Text(viewModel.workspacePath ?? "No workspace selected")
-                            .font(.subheadline)
-                            .foregroundStyle(
-                                viewModel.workspacePath == nil
-                                ? .secondary
-                                : .primary
-                            )
-                            .textSelection(.enabled)
-                            .lineLimit(2)
-                            .truncationMode(.middle)
-
-                        Spacer(minLength: 12)
-
-                        Button("Change Path", systemImage: "folder.badge.gearshape") {
-                            isWorkspaceOpenPanelPresented = true
-                        }
-                    }
-                    .padding(14)
-                    .background(Color.primary.opacity(0.035))
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }
-            }
+            launchAtLoginSection
 
             Spacer()
         }
         .navigationTitle("Settings")
         .padding(24)
-        .frame(width: 660, height: 220, alignment: .topLeading)
+        .frame(width: 660, height: 320, alignment: .topLeading)
         .onChange(of: viewModel.isAlertErrorRequest) { _, newValue in
             if newValue {
                 Task { @MainActor in
@@ -80,6 +43,85 @@ struct SettingsView: View {
             directoryURL: viewModel.workspaceDirectoryURL
         ) { url in
             viewModel.selectWorkspace(url: url)
+        }
+    }
+
+    private var workspaceSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Workspace")
+                .font(.headline)
+
+            Text(
+                viewModel.workspacePath == nil ?
+                "Choose the workspace folder used for project cleanup." :
+                "Replace the currently selected workspace folder."
+            )
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "folder.fill")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 2)
+
+                Text(viewModel.workspacePath ?? "No workspace selected")
+                    .font(.subheadline)
+                    .foregroundStyle(
+                        viewModel.workspacePath == nil
+                        ? .secondary
+                        : .primary
+                    )
+                    .textSelection(.enabled)
+                    .lineLimit(2)
+                    .truncationMode(.middle)
+
+                Spacer(minLength: 12)
+
+                Button("Change Path", systemImage: "folder.badge.gearshape") {
+                    isWorkspaceOpenPanelPresented = true
+                }
+            }
+            .padding(14)
+            .background(Color.primary.opacity(0.035))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
+
+    private var launchAtLoginSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Launch at Login")
+                .font(.headline)
+
+            Text("Open DevCacheCleaner automatically when you log in to your Mac.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Start automatically")
+                        .font(.subheadline)
+
+                    Text("UI only for now. Login item wiring comes next.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 12)
+
+                Toggle(
+                    "",
+                    isOn: Binding(
+                        get: { viewModel.isLaunchAtLoginEnabled },
+                        set: { viewModel.setLaunchAtLoginEnabled($0) }
+                    )
+                )
+                .labelsHidden()
+                .toggleStyle(.switch)
+            }
+            .padding(14)
+            .background(Color.primary.opacity(0.035))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
     }
 }

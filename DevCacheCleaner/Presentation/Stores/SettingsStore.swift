@@ -10,4 +10,5 @@ import Foundation
 @Observable
 final class SettingsStore {
     var selectedWorkspaceURL: URL?
+    var isLaunchAtLoginEnabled: Bool = false
 }
