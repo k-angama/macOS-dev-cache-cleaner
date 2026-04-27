@@ -106,6 +106,7 @@ struct Constants {
         static let cleanupProgress = "cleanup-progress-dev-cache-cleaner"
         static let about = "about-dev-cache-cleaner"
         static let help = "help-dev-cache-cleaner"
+        static let support = "support-dev-cache-cleaner"
         static let settings = "about-dev-cache-settings"
     }
     
