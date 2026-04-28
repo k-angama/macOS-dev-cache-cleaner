@@ -16,6 +16,7 @@ class SupportViewModel {
     var isAlertPresented: Bool = false
     var alertTitle: String = ""
     var alertMessage: String = ""
+    var isDismissScreen: Bool = false
 
     private let loadSupportTipProductsUseCase: LoadSupportTipProductsUseCase
     private let purchaseSupportTipUseCase: PurchaseSupportTipUseCase
@@ -75,13 +76,14 @@ class SupportViewModel {
                 footerMessage = "Thanks for supporting DevCacheCleaner."
                 showAlert(
                     title: "Thank You",
-                    message: "Your \(productTitle) purchase helps support future updates."
+                    message: "Your \(productTitle) purchase helps support future updates.",
+                    isDismiss: true
                 )
             case .pending:
                 footerMessage = "Your purchase is pending approval."
                 showAlert(
                     title: "Purchase Pending",
-                    message: "The App Store is still processing your \(productTitle.lowercased()) purchase."
+                    message: "The App Store is still processing your \(productTitle.lowercased()) purchase.",
                 )
             case .cancelled:
                 break
@@ -95,9 +97,10 @@ class SupportViewModel {
         }
     }
 
-    private func showAlert(title: String, message: String) {
+    private func showAlert(title: String, message: String, isDismiss: Bool = false) {
         alertTitle = title
         alertMessage = message
         isAlertPresented = true
+        isDismissScreen = isDismiss
     }
 }

@@ -49,6 +49,7 @@ struct SupportViewModelTests {
         #expect(context.viewModel.isAlertPresented)
         #expect(context.viewModel.alertTitle == "Thank You")
         #expect(context.viewModel.footerMessage == "Thanks for supporting DevCacheCleaner.")
+        #expect(context.viewModel.isDismissScreen)
     }
 
     @Test func purchaseTip_whenPending_showsPendingMessage() async {
@@ -62,6 +63,7 @@ struct SupportViewModelTests {
         #expect(context.viewModel.isAlertPresented)
         #expect(context.viewModel.alertTitle == "Purchase Pending")
         #expect(context.viewModel.footerMessage == "Your purchase is pending approval.")
+        #expect(context.viewModel.isDismissScreen == false)
     }
 
     @Test func purchaseTip_whenPurchaseFails_showsError() async {
@@ -79,6 +81,7 @@ struct SupportViewModelTests {
             TestSupportTipsError.purchaseFailed.localizedDescription
         )
         #expect(context.viewModel.footerMessage == "The purchase couldn't be completed.")
+        #expect(context.viewModel.isDismissScreen == false)
     }
 
     private func makeSUT() -> SupportViewModelTestContext {

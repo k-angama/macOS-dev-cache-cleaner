@@ -10,6 +10,7 @@ import SwiftUI
 struct SupportView: View {
     
     @State var viewModel: SupportViewModel
+    @Environment(\.dismissWindow) private var dismissWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -59,12 +60,16 @@ struct SupportView: View {
         }
         .alert(
             viewModel.alertTitle,
-            isPresented: Binding(
-                get: { viewModel.isAlertPresented },
-                set: { viewModel.isAlertPresented = $0 }
-            )
+            isPresented: $viewModel.isAlertPresented
         ) {
-            Button("OK", role: .cancel) {}
+            Button("OK", role: .cancel) {
+                guard viewModel.isDismissScreen else {
+                    return
+                }
+                Task {
+                    dismissWindow()
+                }
+            }
         } message: {
             Text(viewModel.alertMessage)
         }
