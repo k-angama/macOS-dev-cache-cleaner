@@ -24,6 +24,10 @@ struct WorkspaceSelectionView: View {
         selectedWorkspaceName != nil
     }
 
+    private var isDetailsEnabled: Bool {
+        hasSelectedWorkspace && state == .ready && onOpenDetails != nil
+    }
+
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             workspaceButton
@@ -154,10 +158,14 @@ struct WorkspaceSelectionView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(hasSelectedWorkspace && onOpenDetails == nil)
-        .help(hasSelectedWorkspace ? "Show workspace cleanable directories" : "Select a workspace")
+        .disabled(hasSelectedWorkspace && isDetailsEnabled == false)
+        .help(
+            hasSelectedWorkspace
+            ? (isDetailsEnabled ? "Show workspace cleanable directories" : "Details are available after scanning")
+            : "Select a workspace"
+        )
         .onHover { isHovering in
-            isHovered = isHovering
+            isHovered = isHovering && (hasSelectedWorkspace == false || isDetailsEnabled)
         }
     }
 }
