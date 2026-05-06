@@ -9,12 +9,6 @@ import Foundation
 
 class AppContainer {
 
-    init() {
-        Task {
-            await supportTipsManager.startObservingTransactions()
-        }
-    }
-
     // MARK: - Infrastructure
 
     private lazy var parameters: Parameters = ParametersImpl()

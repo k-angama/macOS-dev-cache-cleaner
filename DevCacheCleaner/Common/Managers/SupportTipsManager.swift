@@ -31,13 +31,17 @@ protocol SupportTipsManaging {
     func purchase(productID: String) async throws -> SupportTipPurchaseResultEntity
 }
 
-actor SupportTipsManager: SupportTipsManaging {
+class SupportTipsManager: SupportTipsManaging {
 
     private let productIDs = Constants.SupportTips.all
     private var productsByID: [String: Product] = [:]
     private var transactionUpdatesTask: Task<Void, Never>?
+    
+    init() {
+        startObservingTransactions()
+    }
 
-    func startObservingTransactions() {
+    private func startObservingTransactions() {
         guard transactionUpdatesTask == nil else {
             return
         }
@@ -148,3 +152,4 @@ actor SupportTipsManager: SupportTipsManaging {
         }
     }
 }
+
