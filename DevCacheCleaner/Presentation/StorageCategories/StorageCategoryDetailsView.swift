@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct StorageCategoryDetailsView: View {
-    static let panelWidth: CGFloat = 420
+    static let panelWidth: CGFloat = 460
 
     let category: StorageCategoryEntity
     let onCleanSelected: (([StorageSubCategoryEntity]) -> Void)?
