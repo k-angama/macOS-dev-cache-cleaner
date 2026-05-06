@@ -9,9 +9,28 @@ import SwiftUI
 
 struct PathRowView: View {
     let subcategory: StorageSubCategoryEntity
+    var isSelected: Bool = false
+    var onSelectionChange: ((Bool) -> Void)?
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
+            if onSelectionChange != nil {
+                Toggle(
+                    isOn: Binding(
+                        get: {
+                            isSelected
+                        },
+                        set: { newValue in
+                            onSelectionChange?(newValue)
+                        }
+                    )
+                ) {
+                    EmptyView()
+                }
+                .toggleStyle(.checkbox)
+                .disabled(subcategory.size <= 0.01)
+            }
+
             Image(systemName: "folder.fill")
                 .font(.caption)
                 .foregroundStyle(.secondary)

@@ -163,12 +163,20 @@ struct CleanerHomeView: View {
         .floatingPanel(
             of: $viewModel.selectedCategoryForDetails
         ) { category in
-            StorageCategoryDetailsView(category: category)
+            StorageCategoryDetailsView(
+                category: category,
+                onCleanSelected: { _ in
+                }
+            )
         }
         .floatingPanel(
             of: $viewModel.selectedWorkspaceCategoryForDetails
         ) { category in
-            StorageCategoryDetailsView(category: category)
+            StorageCategoryDetailsView(
+                category: category,
+                onCleanSelected: { _ in
+                }
+            )
         }
         .directoryOpenPanel(
             isPresented: $isWorkspaceOpenPanelPresented,

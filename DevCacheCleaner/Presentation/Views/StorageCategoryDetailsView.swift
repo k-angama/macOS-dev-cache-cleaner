@@ -11,6 +11,16 @@ struct StorageCategoryDetailsView: View {
     static let panelWidth: CGFloat = 420
 
     let category: StorageCategoryEntity
+    let onCleanSelected: (([StorageSubCategoryEntity]) -> Void)?
+    @State private var selectedSubcategoryIDs: Set<UUID> = []
+
+    init(
+        category: StorageCategoryEntity,
+        onCleanSelected: (([StorageSubCategoryEntity]) -> Void)? = nil
+    ) {
+        self.category = category
+        self.onCleanSelected = onCleanSelected
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -32,6 +42,14 @@ struct StorageCategoryDetailsView: View {
 
     private var nonEmptyPathCount: Int {
         category.categories.filter { $0.size > 0.01 }.count
+    }
+
+    private var selectedSubcategories: [StorageSubCategoryEntity] {
+        sortedSubcategories.filter { selectedSubcategoryIDs.contains($0.id) }
+    }
+
+    private var selectedSize: CGFloat {
+        selectedSubcategories.reduce(0) { $0 + $1.size }
     }
 
     private var headerCard: some View {
@@ -104,15 +122,60 @@ struct StorageCategoryDetailsView: View {
                 ScrollView {
                     VStack(spacing: 8) {
                         ForEach(sortedSubcategories) { subcategory in
-                            PathRowView(subcategory: subcategory)
+                            PathRowView(
+                                subcategory: subcategory,
+                                isSelected: selectedSubcategoryIDs.contains(subcategory.id),
+                                onSelectionChange: { isSelected in
+                                    updateSelection(
+                                        subcategoryID: subcategory.id,
+                                        isSelected: isSelected
+                                    )
+                                }
+                            )
                         }
                     }
                 }.frame(maxHeight: 500)
+
+                if onCleanSelected != nil {
+                    Divider()
+
+                    HStack(spacing: 10) {
+                        Text(selectionSummary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Spacer()
+
+                        Button(role: .destructive) {
+                            onCleanSelected?(selectedSubcategories)
+                        } label: {
+                            Label("Delete Selected", systemImage: "trash")
+                        }
+                        .disabled(selectedSubcategoryIDs.isEmpty)
+                        .foregroundStyle(.red)
+                    }
+                }
             }
         }
         .padding(14)
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var selectionSummary: String {
+        guard selectedSubcategoryIDs.isEmpty == false else {
+            return "No path selected"
+        }
+
+        return "\(selectedSubcategoryIDs.count) selected - \(selectedSize.byteCountString)"
+    }
+
+    private func updateSelection(subcategoryID: UUID, isSelected: Bool) {
+        if isSelected {
+            selectedSubcategoryIDs.insert(subcategoryID)
+        } else {
+            selectedSubcategoryIDs.remove(subcategoryID)
+        }
     }
 }
 
