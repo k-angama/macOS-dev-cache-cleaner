@@ -8,9 +8,10 @@
 import SwiftUI
 
 struct StorageCategoryDetailsView: View {
-    static let panelWidth: CGFloat = 420
+    static let panelWidth: CGFloat = 460
 
-    let category: StorageCategoryEntity
+    let onCleanSelected: (([StorageSubCategoryEntity]) -> Void)?
+    @State var viewModel: StorageCategoryDetailsViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -26,23 +27,15 @@ struct StorageCategoryDetailsView: View {
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
-    private var sortedSubcategories: [StorageSubCategoryEntity] {
-        category.categories.sorted { $0.size > $1.size }
-    }
-
-    private var nonEmptyPathCount: Int {
-        category.categories.filter { $0.size > 0.01 }.count
-    }
-
     private var headerCard: some View {
         HStack(alignment: .top, spacing: 12) {
             Circle()
-                .fill(category.color.gradient)
+                .fill(viewModel.category.color.gradient)
                 .frame(width: 12, height: 12)
                 .padding(.top, 3)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text(category.name)
+                Text(viewModel.category.name)
                     .font(.headline)
                     .fontWeight(.semibold)
             }
@@ -50,13 +43,13 @@ struct StorageCategoryDetailsView: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 4) {
-                Text(category.size.byteCountString)
+                Text(viewModel.category.size.byteCountString)
                     .font(.headline)
                     .fontWeight(.semibold)
             }
         }
         .padding(14)
-        .background(category.color.opacity(0.1))
+        .background(viewModel.category.color.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
@@ -64,17 +57,17 @@ struct StorageCategoryDetailsView: View {
         HStack(spacing: 8) {
             SummaryCard(
                 title: "Paths",
-                value: "\(category.categories.count)",
+                value: "\(viewModel.pathCount)",
                 symbolName: "folder"
             )
             SummaryCard(
                 title: "Non-empty",
-                value: "\(nonEmptyPathCount)",
+                value: "\(viewModel.nonEmptyPathCount)",
                 symbolName: "externaldrive.fill.badge.checkmark"
             )
             SummaryCard(
                 title: "Largest path",
-                value: sortedSubcategories.first?.size.byteCountString ?? "0 KB",
+                value: viewModel.largestPathSizeText,
                 symbolName: "chart.bar.fill"
             )
         }
@@ -87,12 +80,12 @@ struct StorageCategoryDetailsView: View {
                     .font(.subheadline)
                     .fontWeight(.semibold)
                 Spacer()
-                Text("\(category.categories.count) item\(category.categories.count == 1 ? "" : "s")")
+                Text(viewModel.pathCountText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            if sortedSubcategories.isEmpty {
+            if viewModel.sortedSubcategories.isEmpty {
                 Text("No paths available for this category.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -103,11 +96,40 @@ struct StorageCategoryDetailsView: View {
             } else {
                 ScrollView {
                     VStack(spacing: 8) {
-                        ForEach(sortedSubcategories) { subcategory in
-                            PathRowView(subcategory: subcategory)
+                        ForEach(viewModel.sortedSubcategories) { subcategory in
+                            PathRowView(
+                                subcategory: subcategory,
+                                isSelected: viewModel.isSelected(subcategory),
+                                onSelectionChange: { isSelected in
+                                    viewModel.updateSelection(
+                                        subcategoryID: subcategory.id,
+                                        isSelected: isSelected
+                                    )
+                                }
+                            )
                         }
                     }
                 }.frame(maxHeight: 500)
+
+                if onCleanSelected != nil {
+                    Divider()
+
+                    HStack(spacing: 10) {
+                        Text(viewModel.selectionSummary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Spacer()
+
+                        Button(role: .destructive) {
+                            onCleanSelected?(viewModel.selectedSubcategories)
+                        } label: {
+                            Label("Delete Selected", systemImage: "trash")
+                        }
+                        .disabled(viewModel.isDeleteSelectedDisabled)
+                        .foregroundStyle(.red)
+                    }
+                }
             }
         }
         .padding(14)
@@ -117,10 +139,9 @@ struct StorageCategoryDetailsView: View {
 }
 
 #Preview("Storage Category Details") {
-    return StorageCategoryDetailsView(
-        category: .detailsPreview
-    )
-        .padding()
+    StorageCategoryDetailsDI().start(data: (
+        category: .detailsPreview, onCleanSelected: {_ in })
+    ).padding()
 }
 
 private extension StorageCategoryEntity {

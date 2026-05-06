@@ -70,6 +70,7 @@ class CleanerHomeViewModel {
     private(set) var storageCategorySelected: StorageCategoryEntity?
     private var selectedWorkspaceURL: URL?
     private var isWorkspaceCleanupSelected = false
+    private var isPartialCategoryCleanupSelected = false
     private var hasPendingWorkspaceSelectionSync = false
     private var didFinishInitialOverviewLoad = false
 
@@ -217,6 +218,23 @@ class CleanerHomeViewModel {
         isAlertCleanCache = true
         storageCategorySelected = entity
         isWorkspaceCleanupSelected = false
+        isPartialCategoryCleanupSelected = false
+    }
+
+    func askRemoveSubcategories(
+        from category: StorageCategoryEntity,
+        subcategories: [StorageSubCategoryEntity]
+    ) {
+        guard isCleaning == false, subcategories.isEmpty == false else {
+            return
+        }
+
+        isAlertCleanCache = true
+        storageCategorySelected = category
+            .replacingSubcategories(with: subcategories)
+            .updateSize()
+        isWorkspaceCleanupSelected = false
+        isPartialCategoryCleanupSelected = true
     }
 
     func askRemoveAllCaches() {
@@ -226,6 +244,7 @@ class CleanerHomeViewModel {
         isAlertCleanCache = true
         storageCategorySelected = nil
         isWorkspaceCleanupSelected = false
+        isPartialCategoryCleanupSelected = false
     }
 
     func askRemoveWorkspaceCaches() {
@@ -241,6 +260,25 @@ class CleanerHomeViewModel {
         isAlertCleanCache = true
         storageCategorySelected = selectedWorkspaceCategory
         isWorkspaceCleanupSelected = true
+        isPartialCategoryCleanupSelected = false
+    }
+
+    func askRemoveWorkspaceSubcategories(_ subcategories: [StorageSubCategoryEntity]) {
+        guard
+            isCleaning == false,
+            workspaceRowState == .ready,
+            let selectedWorkspaceCategory,
+            subcategories.isEmpty == false
+        else {
+            return
+        }
+
+        isAlertCleanCache = true
+        storageCategorySelected = selectedWorkspaceCategory
+            .replacingSubcategories(with: subcategories)
+            .updateSize()
+        isWorkspaceCleanupSelected = true
+        isPartialCategoryCleanupSelected = true
     }
 
     func startCleanup(includeWorkspaceInAllCaches: Bool = false) -> String? {
@@ -260,8 +298,8 @@ class CleanerHomeViewModel {
     func startCleanupForSelectedCategory() -> String? {
         guard
             isCleaning == false,
-            let selectedCategoryID = storageCategorySelected?.id,
-            let entity = categories.first(where: { $0.id == selectedCategoryID })
+            let entity = storageCategorySelected,
+            categories.contains(where: { $0.id == entity.id })
         else {
             return nil
         }
@@ -281,7 +319,11 @@ class CleanerHomeViewModel {
         )
 
         Task { [weak self] in
-            await self?.performCleanup(of: entity, homeURL: homeURL)
+            await self?.performCleanup(
+                of: entity,
+                homeURL: homeURL,
+                isPartialCategoryCleanup: self?.isPartialCategoryCleanupSelected ?? false
+            )
         }
 
         return entity.name
@@ -332,23 +374,25 @@ class CleanerHomeViewModel {
             isCleaning == false,
             let selectedWorkspaceURL,
             let selectedWorkspaceCategory,
-            selectedWorkspaceCategory.size > 0.01
+            let entity = storageCategorySelected ?? self.selectedWorkspaceCategory,
+            entity.size > 0.01
         else {
             return nil
         }
 
         isCleaning = true
-        storageCategorySelected = selectedWorkspaceCategory
+        storageCategorySelected = entity
         workspaceRowState = .deleting
         cleanupProgressStore.start(
-            categoryName: selectedWorkspaceCategory.name,
-            totalSize: selectedWorkspaceCategory.categories.reduce(0) { $0 + $1.size }
+            categoryName: entity.name,
+            totalSize: entity.categories.reduce(0) { $0 + $1.size }
         )
 
         Task { [weak self] in
             await self?.performWorkspaceCleanup(
-                of: selectedWorkspaceCategory,
-                workspaceURL: selectedWorkspaceURL
+                of: entity,
+                workspaceURL: selectedWorkspaceURL,
+                isPartialCategoryCleanup: self?.isPartialCategoryCleanupSelected ?? false
             )
         }
 
@@ -549,15 +593,26 @@ class CleanerHomeViewModel {
     // MARK: - Cleanup Execution
 
     @MainActor
-    private func performCleanup(of entity: StorageCategoryEntity, homeURL: URL) async {
+    private func performCleanup(
+        of entity: StorageCategoryEntity,
+        homeURL: URL,
+        isPartialCategoryCleanup: Bool = false
+    ) async {
         var didFinish = false
 
         for await event in cleanStorageCategoryUseCase.execute(homeURL: homeURL, category: entity) {
-            applyCleanupEvent(event, categoryID: entity.id)
+            applyCleanupEvent(
+                event,
+                categoryID: entity.id,
+                onCategoryUpdated: isPartialCategoryCleanup ? { [weak self] updatedCategory in
+                    self?.updateSubcategories(updatedCategory.categories, in: entity.id)
+                } : nil
+            )
 
             if event.phase == .finished {
                 didFinish = true
                 storageCategorySelected = nil
+                isPartialCategoryCleanupSelected = false
                 isCleaning = false
                 setCategoryRowState(.ready, for: entity.id)
 
@@ -572,6 +627,7 @@ class CleanerHomeViewModel {
 
         if didFinish == false {
             storageCategorySelected = nil
+            isPartialCategoryCleanupSelected = false
             isCleaning = false
             setCategoryRowState(.ready, for: entity.id)
         }
@@ -674,7 +730,11 @@ class CleanerHomeViewModel {
     }
 
     @MainActor
-    private func performWorkspaceCleanup(of entity: StorageCategoryEntity, workspaceURL: URL) async {
+    private func performWorkspaceCleanup(
+        of entity: StorageCategoryEntity,
+        workspaceURL: URL,
+        isPartialCategoryCleanup: Bool = false
+    ) async {
         var didFinish = false
 
         for await event in cleanStorageCategoryUseCase.execute(homeURL: workspaceURL, category: entity) {
@@ -682,7 +742,11 @@ class CleanerHomeViewModel {
                 event,
                 categoryID: entity.id,
                 onCategoryUpdated: { [weak self] updatedCategory in
-                    self?.selectedWorkspaceCategory = updatedCategory
+                    if isPartialCategoryCleanup {
+                        self?.updateWorkspaceSubcategories(updatedCategory.categories)
+                    } else {
+                        self?.selectedWorkspaceCategory = updatedCategory
+                    }
                 }
             )
 
@@ -690,6 +754,7 @@ class CleanerHomeViewModel {
                 didFinish = true
                 storageCategorySelected = nil
                 isWorkspaceCleanupSelected = false
+                isPartialCategoryCleanupSelected = false
                 isCleaning = false
                 workspaceRowState = .ready
 
@@ -705,6 +770,7 @@ class CleanerHomeViewModel {
         if didFinish == false {
             storageCategorySelected = nil
             isWorkspaceCleanupSelected = false
+            isPartialCategoryCleanupSelected = false
             isCleaning = false
             workspaceRowState = .ready
         }
@@ -794,6 +860,30 @@ class CleanerHomeViewModel {
 
         categories[index] = updatedCategory
     }
+
+    private func updateSubcategories(
+        _ updatedSubcategories: [StorageSubCategoryEntity],
+        in categoryID: UUID
+    ) {
+        guard let category = categories.first(where: { $0.id == categoryID }) else {
+            return
+        }
+
+        let updatedCategory = category
+            .replacingMatchingSubcategories(with: updatedSubcategories)
+            .updateSize()
+        updateCategory(updatedCategory, for: categoryID)
+    }
+
+    private func updateWorkspaceSubcategories(_ updatedSubcategories: [StorageSubCategoryEntity]) {
+        guard let currentWorkspaceCategory = selectedWorkspaceCategory else {
+            return
+        }
+
+        selectedWorkspaceCategory = currentWorkspaceCategory
+            .replacingMatchingSubcategories(with: updatedSubcategories)
+            .updateSize()
+    }
     
     private func setCategoryRowState(_ state: StorageCategoryRowState, for id: UUID) {
         withAnimation(.easeInOut(duration: 0.2)) {
@@ -825,5 +915,38 @@ class CleanerHomeViewModel {
         }
 
         selectedWorkspaceCategoryForDetails = selectedWorkspaceCategory
+    }
+}
+
+private extension StorageCategoryEntity {
+    func replacingSubcategories(
+        with subcategories: [StorageSubCategoryEntity]
+    ) -> StorageCategoryEntity {
+        StorageCategoryEntity(
+            id: id,
+            name: name,
+            color: color,
+            size: size,
+            categories: subcategories
+        )
+    }
+
+    func replacingMatchingSubcategories(
+        with updatedSubcategories: [StorageSubCategoryEntity]
+    ) -> StorageCategoryEntity {
+        let updatedByID = Dictionary(
+            uniqueKeysWithValues: updatedSubcategories.map { ($0.id, $0) }
+        )
+        let mergedSubcategories = categories.map { subcategory in
+            updatedByID[subcategory.id] ?? subcategory
+        }
+
+        return StorageCategoryEntity(
+            id: id,
+            name: name,
+            color: color,
+            size: size,
+            categories: mergedSubcategories
+        )
     }
 }

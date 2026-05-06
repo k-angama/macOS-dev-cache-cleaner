@@ -12,11 +12,6 @@ struct CleanupProgressView: View {
     @State var viewModel: CleanupProgressViewModel
     @Environment(\.dismissWindow) private var dismissWindow
     
-    init(viewModel: CleanupProgressViewModel, selectedCategoryName: String) {
-        self.viewModel = viewModel
-        self.viewModel.setCategoryName(selectedCategoryName)
-    }
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Cleaning cache files...")
@@ -61,8 +56,5 @@ struct CleanupProgressView: View {
 
 #Preview {
     let container = AppContainer()
-    return CleanupProgressView(
-        viewModel: container.cleanupProgressViewModel,
-        selectedCategoryName: StorageCategoryEntity.preview.name
-    )
+    container.cleanupProgressDI.start(data: StorageCategoryEntity.preview.name)
 }

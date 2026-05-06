@@ -124,6 +124,7 @@ struct StorageUsageView: View {
             VStack(alignment: .center, spacing: 18) {
                 ForEach(categories) { cat in
                     let state = rowState(for: cat)
+                    let isDetailsEnabled = state == .ready && cat.categories.isEmpty == false
                     HStack {
                         Button {
                             onOpenDetails?(cat)
@@ -151,9 +152,10 @@ struct StorageUsageView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         }
                         .buttonStyle(.plain)
-                        .help("Show included paths")
+                        .disabled(isDetailsEnabled == false)
+                        .help(isDetailsEnabled ? "Show included paths" : "Details are available after scanning")
                         .onHover { isHovering in
-                            if isHovering {
+                            if isHovering, isDetailsEnabled {
                                 hoveredCategoryID = cat.id
                             } else if hoveredCategoryID == cat.id {
                                 hoveredCategoryID = nil

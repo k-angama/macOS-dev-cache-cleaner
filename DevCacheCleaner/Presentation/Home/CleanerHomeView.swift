@@ -47,10 +47,14 @@ struct CleanerHomeView: View {
                             viewModel.selectCategoryForDetails(category)
                         },
                         onClean: { entity in
-                            viewModel.askRemoveDirectory(entity: entity)
+                            requestCleanupConfirmation {
+                                viewModel.askRemoveDirectory(entity: entity)
+                            }
                         },
                         onCleanAll: {
-                            viewModel.askRemoveAllCaches()
+                            requestCleanupConfirmation {
+                                viewModel.askRemoveAllCaches()
+                            }
                         },
                         onSelectWorkspace: {
                             isWorkspaceOpenPanelPresented = true
@@ -59,7 +63,9 @@ struct CleanerHomeView: View {
                             viewModel.selectWorkspaceForDetails()
                         },
                         onCleanWorkspace: {
-                            viewModel.askRemoveWorkspaceCaches()
+                            requestCleanupConfirmation {
+                                viewModel.askRemoveWorkspaceCaches()
+                            }
                         }
                     )
                 }
@@ -142,33 +148,32 @@ struct CleanerHomeView: View {
                 }
             }
         })
-        .onChange(of: viewModel.isAlertCleanCache, { _, newValue in
-            if newValue {
-                Task { @MainActor in
-                    let confirmation = AlertPresenter.showConfirmation(
-                        title: "Clean Cache Files",
-                        message: "Are you sure to proceed? This can't be undone.",
-                        checkboxTitle: viewModel.cleanAllWorkspaceOptionTitle
-                    )
-
-                    if confirmation.didConfirm {
-                        startCleanupWindow(
-                            includeWorkspaceInAllCaches: confirmation.isCheckboxChecked
-                        )
-                    }
-                    viewModel.isAlertCleanCache = false
-                }
-            }
-        })
         .floatingPanel(
             of: $viewModel.selectedCategoryForDetails
         ) { category in
-            StorageCategoryDetailsView(category: category)
+            StorageCategoryDetailsDI().start(data: (
+                category: category,
+                onCleanSelected: { subcategories in
+                    requestCleanupConfirmation {
+                        viewModel.askRemoveSubcategories(
+                            from: category,
+                            subcategories: subcategories
+                        )
+                    }
+                })
+            )
         }
         .floatingPanel(
             of: $viewModel.selectedWorkspaceCategoryForDetails
         ) { category in
-            StorageCategoryDetailsView(category: category)
+            StorageCategoryDetailsDI().start(data: (
+                category: category,
+                onCleanSelected: { subcategories in
+                    requestCleanupConfirmation {
+                        viewModel.askRemoveWorkspaceSubcategories(subcategories)
+                    }
+                })
+            )
         }
         .directoryOpenPanel(
             isPresented: $isWorkspaceOpenPanelPresented,
@@ -189,6 +194,29 @@ struct CleanerHomeView: View {
 
     }
     
+    func requestCleanupConfirmation(_ action: () -> Void) {
+        viewModel.isAlertCleanCache = false
+        action()
+
+        guard viewModel.isAlertCleanCache else {
+            return
+        }
+
+        let confirmation = AlertPresenter.showConfirmation(
+            title: "Clean Cache Files",
+            message: "Are you sure to proceed? This can't be undone.",
+            checkboxTitle: viewModel.cleanAllWorkspaceOptionTitle
+        )
+
+        if confirmation.didConfirm {
+            startCleanupWindow(
+                includeWorkspaceInAllCaches: confirmation.isCheckboxChecked
+            )
+        }
+
+        viewModel.isAlertCleanCache = false
+    }
+
     func startCleanupWindow(includeWorkspaceInAllCaches: Bool = false) {
         if let categoryName = viewModel.startCleanup(
             includeWorkspaceInAllCaches: includeWorkspaceInAllCaches
@@ -204,16 +232,13 @@ struct CleanerHomeView: View {
 
 #Preview {
     let container = AppContainer()
-    let viewModel = container.cleanerHomeViewModel
-    viewModel.isAccessUserDirectory = false
-    return CleanerHomeView(
-        viewModel: viewModel
-    )
+    container.cleanerHomeDI.startPreview { viewModel in
+        viewModel.isAccessUserDirectory = false
+    }
 }
 
 #Preview("AccessUserDirectory", body: {
     let container = AppContainer()
-    let viewModel = container.cleanerHomeViewModel
     let categories: [StorageCategoryEntity] = [
         .init(name: "Android/Gradle Caches", color: .red, size: 0, categories: []),
         .init(name: "Xcode Caches & DerivedData", color: .orange, size: 100, categories: []),
@@ -224,18 +249,18 @@ struct CleanerHomeView: View {
         .init(name: "IDE (JetBrains, VSCode) Cache", color: .blue, size: 20.8, categories: []),
         .init(name: "Browser Cache", color: .gray.opacity(0.7), size: 5.8, categories: [])
     ]
-    viewModel.isAccessUserDirectory = true
-    viewModel.isAlertCleanCache = false
-    viewModel.totalSize = 500
-    viewModel.freeSize = 70
-    viewModel.selectWorkspace(url: URL(filePath: "/Users/kangama/Documents/Projets/Desktop/MacOS/app/DevCacheCleaner"))
-    viewModel.categories = categories
-    viewModel.categoryRowStates = [
-        categories[1].id: .loading,
-        categories[3].id: .deleting
-    ]
-    return CleanerHomeView(
-        viewModel: viewModel
-    )
+    return container.cleanerHomeDI.startPreview { viewModel in
+        viewModel.isAccessUserDirectory = true
+        viewModel.isAlertCleanCache = false
+        viewModel.totalSize = 500
+        viewModel.freeSize = 70
+        viewModel.selectWorkspace(url: URL(filePath: "/Users/kangama/Documents/Projets/Desktop/MacOS/app/DevCacheCleaner"))
+        viewModel.categories = categories
+        viewModel.categoryRowStates = [
+            categories[1].id: .loading,
+            categories[3].id: .deleting
+        ]
+    }
 })
  
+
