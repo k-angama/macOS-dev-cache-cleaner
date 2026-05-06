@@ -11,5 +11,11 @@ import SwiftUI
 protocol PresentationDI {
     associatedtype Content: View
     associatedtype Data = Void
-    static func start(data: Data) -> Content
+    func start(data: Data) -> Content
+}
+
+extension PresentationDI where Data == Void {
+    func start() -> Content {
+        start(data: ())
+    }
 }

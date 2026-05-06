@@ -128,7 +128,5 @@ struct SettingsView: View {
 
 #Preview {
     let container = AppContainer()
-    return SettingsView(
-        viewModel: container.settingsViewModel,
-    )
+    return container.settingsDI.start()
 }

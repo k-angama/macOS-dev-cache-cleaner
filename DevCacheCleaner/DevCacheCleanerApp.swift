@@ -13,9 +13,7 @@ struct DevCacheCleanerApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            CleanerHomeView(
-                viewModel: container.cleanerHomeViewModel
-            )
+            container.cleanerHomeDI.start()
                 .frame(width: 600)
         } label: {
             Image("FeatherDusterIcon")
@@ -27,10 +25,7 @@ struct DevCacheCleanerApp: App {
         
         WindowGroup("Cleanup Progress", id: Constants.WindowIds.cleanupProgress, for: String.self) { $categoryName in
             if let categoryName = categoryName {
-                CleanupProgressView(
-                    viewModel: container.cleanupProgressViewModel,
-                    selectedCategoryName: categoryName
-                )
+                container.cleanupProgressDI.start(data: categoryName)
                 .frame(width: 600)
             }
         }
@@ -54,7 +49,7 @@ struct DevCacheCleanerApp: App {
         .windowResizability(.contentSize)
 
         Window("Support DevCacheCleaner", id: Constants.WindowIds.support) {
-            SupportView(viewModel: container.supportViewModel)
+            container.supportDI.start()
                 .windowMinimizeBehavior(.disabled)
                 .containerBackground(.regularMaterial, for: .window)
         }
@@ -62,7 +57,7 @@ struct DevCacheCleanerApp: App {
         .windowResizability(.contentSize)
         
         Window("Settings DevCacheCleaner", id: Constants.WindowIds.settings) {
-            SettingsView(viewModel: container.settingsViewModel)
+            container.settingsDI.start()
                 .windowMinimizeBehavior(.disabled)
                 .windowFullScreenBehavior(.disabled)
                 .windowResizeBehavior(.disabled)

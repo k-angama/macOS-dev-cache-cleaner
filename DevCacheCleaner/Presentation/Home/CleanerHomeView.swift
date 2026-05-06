@@ -151,7 +151,7 @@ struct CleanerHomeView: View {
         .floatingPanel(
             of: $viewModel.selectedCategoryForDetails
         ) { category in
-            StorageCategoryDetailsDI.start(data: (
+            StorageCategoryDetailsDI().start(data: (
                 category: category,
                 onCleanSelected: { subcategories in
                     requestCleanupConfirmation {
@@ -166,7 +166,7 @@ struct CleanerHomeView: View {
         .floatingPanel(
             of: $viewModel.selectedWorkspaceCategoryForDetails
         ) { category in
-            StorageCategoryDetailsDI.start(data: (
+            StorageCategoryDetailsDI().start(data: (
                 category: category,
                 onCleanSelected: { subcategories in
                     requestCleanupConfirmation {
@@ -232,16 +232,13 @@ struct CleanerHomeView: View {
 
 #Preview {
     let container = AppContainer()
-    let viewModel = container.cleanerHomeViewModel
-    viewModel.isAccessUserDirectory = false
-    return CleanerHomeView(
-        viewModel: viewModel
-    )
+    return container.cleanerHomeDI.startPreview { viewModel in
+        viewModel.isAccessUserDirectory = false
+    }
 }
 
 #Preview("AccessUserDirectory", body: {
     let container = AppContainer()
-    let viewModel = container.cleanerHomeViewModel
     let categories: [StorageCategoryEntity] = [
         .init(name: "Android/Gradle Caches", color: .red, size: 0, categories: []),
         .init(name: "Xcode Caches & DerivedData", color: .orange, size: 100, categories: []),
@@ -252,18 +249,17 @@ struct CleanerHomeView: View {
         .init(name: "IDE (JetBrains, VSCode) Cache", color: .blue, size: 20.8, categories: []),
         .init(name: "Browser Cache", color: .gray.opacity(0.7), size: 5.8, categories: [])
     ]
-    viewModel.isAccessUserDirectory = true
-    viewModel.isAlertCleanCache = false
-    viewModel.totalSize = 500
-    viewModel.freeSize = 70
-    viewModel.selectWorkspace(url: URL(filePath: "/Users/kangama/Documents/Projets/Desktop/MacOS/app/DevCacheCleaner"))
-    viewModel.categories = categories
-    viewModel.categoryRowStates = [
-        categories[1].id: .loading,
-        categories[3].id: .deleting
-    ]
-    return CleanerHomeView(
-        viewModel: viewModel
-    )
+    return container.cleanerHomeDI.startPreview { viewModel in
+        viewModel.isAccessUserDirectory = true
+        viewModel.isAlertCleanCache = false
+        viewModel.totalSize = 500
+        viewModel.freeSize = 70
+        viewModel.selectWorkspace(url: URL(filePath: "/Users/kangama/Documents/Projets/Desktop/MacOS/app/DevCacheCleaner"))
+        viewModel.categories = categories
+        viewModel.categoryRowStates = [
+            categories[1].id: .loading,
+            categories[3].id: .deleting
+        ]
+    }
 })
  

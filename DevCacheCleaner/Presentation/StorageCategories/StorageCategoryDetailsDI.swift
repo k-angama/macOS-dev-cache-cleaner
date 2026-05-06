@@ -9,7 +9,7 @@ import Foundation
 
 struct StorageCategoryDetailsDI: PresentationDI {
     
-    static func start(
+    func start(
         data: (
             category: StorageCategoryEntity,
             onCleanSelected: (([StorageSubCategoryEntity]) -> Void)?

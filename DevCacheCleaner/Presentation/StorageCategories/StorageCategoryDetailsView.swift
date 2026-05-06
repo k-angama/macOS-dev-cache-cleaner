@@ -139,11 +139,12 @@ struct StorageCategoryDetailsView: View {
 }
 
 #Preview("Storage Category Details") {
-    StorageCategoryDetailsDI.start(data: (
+    StorageCategoryDetailsDI().start(data: (
         category: .detailsPreview, onCleanSelected: {_ in })
     ).padding()
 }
 
+#if DEBUG
 private extension StorageCategoryEntity {
     static var detailsPreview: StorageCategoryEntity {
         StorageCategoryEntity(
@@ -180,3 +181,4 @@ private extension StorageCategoryEntity {
         )
     }
 }
+#endif

@@ -101,9 +101,7 @@ struct SupportView: View {
 }
 
 #Preview {
-    let container = AppContainer()
-    let viewModel = container.supportViewModel
-    viewModel.tipProducts = [
+    AppContainer().supportDI.startPreview(products: [
         .init(
             id: Constants.SupportTips.coffee,
             title: "Coffee Tip",
@@ -122,6 +120,5 @@ struct SupportView: View {
             message: "A generous tip if the app has become part of your developer workflow.",
             displayPrice: "$9.99"
         )
-    ]
-    return SupportView(viewModel: viewModel)
+    ])
 }
