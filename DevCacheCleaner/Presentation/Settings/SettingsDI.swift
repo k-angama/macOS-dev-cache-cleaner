@@ -7,7 +7,7 @@
 
 import Foundation
 
-class SettingsDI: PresentationDI {
+final class SettingsDI: PresentationDI {
     private let directoryAccessManager: DirectoryAccessManaging
     private let launchAtStartupManager: LaunchAtStartupManaging
     private let settingsStore: SettingsStore
