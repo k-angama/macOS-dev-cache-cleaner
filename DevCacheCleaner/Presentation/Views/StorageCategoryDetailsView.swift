@@ -34,6 +34,9 @@ struct StorageCategoryDetailsView: View {
         .frame(width: Self.panelWidth, alignment: .topLeading)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .onChange(of: category) { _, newCategory in
+            pruneSelection(for: newCategory)
+        }
     }
 
     private var sortedSubcategories: [StorageSubCategoryEntity] {
@@ -176,6 +179,15 @@ struct StorageCategoryDetailsView: View {
         } else {
             selectedSubcategoryIDs.remove(subcategoryID)
         }
+    }
+
+    private func pruneSelection(for category: StorageCategoryEntity) {
+        let selectableIDs = Set(
+            category.categories
+                .filter { $0.size > 0.01 }
+                .map(\.id)
+        )
+        selectedSubcategoryIDs.formIntersection(selectableIDs)
     }
 }
 

@@ -47,10 +47,14 @@ struct CleanerHomeView: View {
                             viewModel.selectCategoryForDetails(category)
                         },
                         onClean: { entity in
-                            viewModel.askRemoveDirectory(entity: entity)
+                            requestCleanupConfirmation {
+                                viewModel.askRemoveDirectory(entity: entity)
+                            }
                         },
                         onCleanAll: {
-                            viewModel.askRemoveAllCaches()
+                            requestCleanupConfirmation {
+                                viewModel.askRemoveAllCaches()
+                            }
                         },
                         onSelectWorkspace: {
                             isWorkspaceOpenPanelPresented = true
@@ -59,7 +63,9 @@ struct CleanerHomeView: View {
                             viewModel.selectWorkspaceForDetails()
                         },
                         onCleanWorkspace: {
-                            viewModel.askRemoveWorkspaceCaches()
+                            requestCleanupConfirmation {
+                                viewModel.askRemoveWorkspaceCaches()
+                            }
                         }
                     )
                 }
@@ -142,30 +148,18 @@ struct CleanerHomeView: View {
                 }
             }
         })
-        .onChange(of: viewModel.isAlertCleanCache, { _, newValue in
-            if newValue {
-                Task { @MainActor in
-                    let confirmation = AlertPresenter.showConfirmation(
-                        title: "Clean Cache Files",
-                        message: "Are you sure to proceed? This can't be undone.",
-                        checkboxTitle: viewModel.cleanAllWorkspaceOptionTitle
-                    )
-
-                    if confirmation.didConfirm {
-                        startCleanupWindow(
-                            includeWorkspaceInAllCaches: confirmation.isCheckboxChecked
-                        )
-                    }
-                    viewModel.isAlertCleanCache = false
-                }
-            }
-        })
         .floatingPanel(
             of: $viewModel.selectedCategoryForDetails
         ) { category in
             StorageCategoryDetailsView(
                 category: category,
-                onCleanSelected: { _ in
+                onCleanSelected: { subcategories in
+                    requestCleanupConfirmation {
+                        viewModel.askRemoveSubcategories(
+                            from: category,
+                            subcategories: subcategories
+                        )
+                    }
                 }
             )
         }
@@ -174,7 +168,10 @@ struct CleanerHomeView: View {
         ) { category in
             StorageCategoryDetailsView(
                 category: category,
-                onCleanSelected: { _ in
+                onCleanSelected: { subcategories in
+                    requestCleanupConfirmation {
+                        viewModel.askRemoveWorkspaceSubcategories(subcategories)
+                    }
                 }
             )
         }
@@ -197,6 +194,29 @@ struct CleanerHomeView: View {
 
     }
     
+    func requestCleanupConfirmation(_ action: () -> Void) {
+        viewModel.isAlertCleanCache = false
+        action()
+
+        guard viewModel.isAlertCleanCache else {
+            return
+        }
+
+        let confirmation = AlertPresenter.showConfirmation(
+            title: "Clean Cache Files",
+            message: "Are you sure to proceed? This can't be undone.",
+            checkboxTitle: viewModel.cleanAllWorkspaceOptionTitle
+        )
+
+        if confirmation.didConfirm {
+            startCleanupWindow(
+                includeWorkspaceInAllCaches: confirmation.isCheckboxChecked
+            )
+        }
+
+        viewModel.isAlertCleanCache = false
+    }
+
     func startCleanupWindow(includeWorkspaceInAllCaches: Bool = false) {
         if let categoryName = viewModel.startCleanup(
             includeWorkspaceInAllCaches: includeWorkspaceInAllCaches

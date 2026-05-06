@@ -41,9 +41,11 @@ struct PathRowView: View {
                     .font(.subheadline)
                     .textSelection(.enabled)
 
-                Text(subcategory.rule.displayDescription)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                if case .childNamePrefix = subcategory.rule {
+                    Text(subcategory.rule.displayDescription)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Spacer(minLength: 12)
