@@ -7,12 +7,14 @@
 
 import SwiftUI
 import AppKit
+import StoreKit
 
 struct CleanerHomeView: View {
     @State var viewModel: CleanerHomeViewModel
     @State private var isWorkspaceOpenPanelPresented = false
     @State private var isHomeOpenPanelPresented = false
     @Environment(\.openWindow) var openWindow
+    @Environment(\.requestReview) private var requestReview
     
     var body: some View {
 
@@ -79,14 +81,21 @@ struct CleanerHomeView: View {
             }
             Divider()
             HStack {
+                Button("☕️ Leave a Tip") {
+                    NSApp.activate(ignoringOtherApps: true)
+                    openWindow(
+                        id: Constants.WindowIds.support,
+                    )
+                }
+
+                Button("Review", systemImage: "star") {
+                    NSApp.activate(ignoringOtherApps: true)
+                    requestReview()
+                }
+
                 Spacer()
+
                 Menu {
-                    Button("Support Development") {
-                        openWindow(
-                            id: Constants.WindowIds.support,
-                        )
-                    }
-                    Divider()
                     Button("Help") {
                         NSApp.activate(ignoringOtherApps: true)
                         openWindow(
@@ -110,8 +119,9 @@ struct CleanerHomeView: View {
                         NSApp.terminate(nil)
                     }.keyboardShortcut("q", modifiers: [.control])
                 } label: {
-                    Image(systemName: "gearshape")
+                    Label("Menu", systemImage: "gearshape")
                 }
+                .buttonStyle(.bordered)
             }
 
         }
