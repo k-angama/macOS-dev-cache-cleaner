@@ -10,20 +10,8 @@ import SwiftUI
 struct StorageCategoryDetailsView: View {
     static let panelWidth: CGFloat = 460
 
-    let category: StorageCategoryEntity
     let onCleanSelected: (([StorageSubCategoryEntity]) -> Void)?
-    @State private var viewModel: StorageCategoryDetailsViewModel
-
-    init(
-        category: StorageCategoryEntity,
-        onCleanSelected: (([StorageSubCategoryEntity]) -> Void)? = nil
-    ) {
-        self.category = category
-        self.onCleanSelected = onCleanSelected
-        _viewModel = State(
-            initialValue: StorageCategoryDetailsViewModel(category: category)
-        )
-    }
+    @State var viewModel: StorageCategoryDetailsViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -37,20 +25,17 @@ struct StorageCategoryDetailsView: View {
         .frame(width: Self.panelWidth, alignment: .topLeading)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .onChange(of: category) { _, newCategory in
-            viewModel.updateCategory(newCategory)
-        }
     }
 
     private var headerCard: some View {
         HStack(alignment: .top, spacing: 12) {
             Circle()
-                .fill(category.color.gradient)
+                .fill(viewModel.category.color.gradient)
                 .frame(width: 12, height: 12)
                 .padding(.top, 3)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text(category.name)
+                Text(viewModel.category.name)
                     .font(.headline)
                     .fontWeight(.semibold)
             }
@@ -58,13 +43,13 @@ struct StorageCategoryDetailsView: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 4) {
-                Text(category.size.byteCountString)
+                Text(viewModel.category.size.byteCountString)
                     .font(.headline)
                     .fontWeight(.semibold)
             }
         }
         .padding(14)
-        .background(category.color.opacity(0.1))
+        .background(viewModel.category.color.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
@@ -154,10 +139,9 @@ struct StorageCategoryDetailsView: View {
 }
 
 #Preview("Storage Category Details") {
-    return StorageCategoryDetailsView(
-        category: .detailsPreview
-    )
-        .padding()
+    StorageCategoryDetailsDI.start(data: (
+        category: .detailsPreview, onCleanSelected: {_ in })
+    ).padding()
 }
 
 private extension StorageCategoryEntity {

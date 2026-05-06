@@ -151,7 +151,7 @@ struct CleanerHomeView: View {
         .floatingPanel(
             of: $viewModel.selectedCategoryForDetails
         ) { category in
-            StorageCategoryDetailsView(
+            StorageCategoryDetailsDI.start(data: (
                 category: category,
                 onCleanSelected: { subcategories in
                     requestCleanupConfirmation {
@@ -160,19 +160,19 @@ struct CleanerHomeView: View {
                             subcategories: subcategories
                         )
                     }
-                }
+                })
             )
         }
         .floatingPanel(
             of: $viewModel.selectedWorkspaceCategoryForDetails
         ) { category in
-            StorageCategoryDetailsView(
+            StorageCategoryDetailsDI.start(data: (
                 category: category,
                 onCleanSelected: { subcategories in
                     requestCleanupConfirmation {
                         viewModel.askRemoveWorkspaceSubcategories(subcategories)
                     }
-                }
+                })
             )
         }
         .directoryOpenPanel(

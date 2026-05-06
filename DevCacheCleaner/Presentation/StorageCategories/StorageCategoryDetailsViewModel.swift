@@ -20,12 +20,15 @@ class StorageCategoryDetailsViewModel {
     var selectedSize: CGFloat = 0
     var selectionSummary: String = "No path selected"
     var isDeleteSelectedDisabled: Bool = true
+    var category: StorageCategoryEntity
 
     init(category: StorageCategoryEntity) {
+        self.category = category
         updateCategory(category)
     }
 
     func updateCategory(_ category: StorageCategoryEntity) {
+        self.category = category
         sortedSubcategories = category.categories.sorted { $0.size > $1.size }
         pathCount = category.categories.count
         pathCountText = "\(pathCount) item\(pathCount == 1 ? "" : "s")"
