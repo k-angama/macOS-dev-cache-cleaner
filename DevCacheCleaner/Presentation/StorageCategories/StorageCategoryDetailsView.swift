@@ -12,7 +12,7 @@ struct StorageCategoryDetailsView: View {
 
     let category: StorageCategoryEntity
     let onCleanSelected: (([StorageSubCategoryEntity]) -> Void)?
-    @State private var selectedSubcategoryIDs: Set<UUID> = []
+    @State private var viewModel: StorageCategoryDetailsViewModel
 
     init(
         category: StorageCategoryEntity,
@@ -20,6 +20,9 @@ struct StorageCategoryDetailsView: View {
     ) {
         self.category = category
         self.onCleanSelected = onCleanSelected
+        _viewModel = State(
+            initialValue: StorageCategoryDetailsViewModel(category: category)
+        )
     }
 
     var body: some View {
@@ -35,24 +38,8 @@ struct StorageCategoryDetailsView: View {
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .onChange(of: category) { _, newCategory in
-            pruneSelection(for: newCategory)
+            viewModel.updateCategory(newCategory)
         }
-    }
-
-    private var sortedSubcategories: [StorageSubCategoryEntity] {
-        category.categories.sorted { $0.size > $1.size }
-    }
-
-    private var nonEmptyPathCount: Int {
-        category.categories.filter { $0.size > 0.01 }.count
-    }
-
-    private var selectedSubcategories: [StorageSubCategoryEntity] {
-        sortedSubcategories.filter { selectedSubcategoryIDs.contains($0.id) }
-    }
-
-    private var selectedSize: CGFloat {
-        selectedSubcategories.reduce(0) { $0 + $1.size }
     }
 
     private var headerCard: some View {
@@ -85,17 +72,17 @@ struct StorageCategoryDetailsView: View {
         HStack(spacing: 8) {
             SummaryCard(
                 title: "Paths",
-                value: "\(category.categories.count)",
+                value: "\(viewModel.pathCount)",
                 symbolName: "folder"
             )
             SummaryCard(
                 title: "Non-empty",
-                value: "\(nonEmptyPathCount)",
+                value: "\(viewModel.nonEmptyPathCount)",
                 symbolName: "externaldrive.fill.badge.checkmark"
             )
             SummaryCard(
                 title: "Largest path",
-                value: sortedSubcategories.first?.size.byteCountString ?? "0 KB",
+                value: viewModel.largestPathSizeText,
                 symbolName: "chart.bar.fill"
             )
         }
@@ -108,12 +95,12 @@ struct StorageCategoryDetailsView: View {
                     .font(.subheadline)
                     .fontWeight(.semibold)
                 Spacer()
-                Text("\(category.categories.count) item\(category.categories.count == 1 ? "" : "s")")
+                Text(viewModel.pathCountText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            if sortedSubcategories.isEmpty {
+            if viewModel.sortedSubcategories.isEmpty {
                 Text("No paths available for this category.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -124,12 +111,12 @@ struct StorageCategoryDetailsView: View {
             } else {
                 ScrollView {
                     VStack(spacing: 8) {
-                        ForEach(sortedSubcategories) { subcategory in
+                        ForEach(viewModel.sortedSubcategories) { subcategory in
                             PathRowView(
                                 subcategory: subcategory,
-                                isSelected: selectedSubcategoryIDs.contains(subcategory.id),
+                                isSelected: viewModel.isSelected(subcategory),
                                 onSelectionChange: { isSelected in
-                                    updateSelection(
+                                    viewModel.updateSelection(
                                         subcategoryID: subcategory.id,
                                         isSelected: isSelected
                                     )
@@ -143,18 +130,18 @@ struct StorageCategoryDetailsView: View {
                     Divider()
 
                     HStack(spacing: 10) {
-                        Text(selectionSummary)
+                        Text(viewModel.selectionSummary)
                             .font(.caption)
                             .foregroundStyle(.secondary)
 
                         Spacer()
 
                         Button(role: .destructive) {
-                            onCleanSelected?(selectedSubcategories)
+                            onCleanSelected?(viewModel.selectedSubcategories)
                         } label: {
                             Label("Delete Selected", systemImage: "trash")
                         }
-                        .disabled(selectedSubcategoryIDs.isEmpty)
+                        .disabled(viewModel.isDeleteSelectedDisabled)
                         .foregroundStyle(.red)
                     }
                 }
@@ -163,31 +150,6 @@ struct StorageCategoryDetailsView: View {
         .padding(14)
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-
-    private var selectionSummary: String {
-        guard selectedSubcategoryIDs.isEmpty == false else {
-            return "No path selected"
-        }
-
-        return "\(selectedSubcategoryIDs.count) selected - \(selectedSize.byteCountString)"
-    }
-
-    private func updateSelection(subcategoryID: UUID, isSelected: Bool) {
-        if isSelected {
-            selectedSubcategoryIDs.insert(subcategoryID)
-        } else {
-            selectedSubcategoryIDs.remove(subcategoryID)
-        }
-    }
-
-    private func pruneSelection(for category: StorageCategoryEntity) {
-        let selectableIDs = Set(
-            category.categories
-                .filter { $0.size > 0.01 }
-                .map(\.id)
-        )
-        selectedSubcategoryIDs.formIntersection(selectableIDs)
     }
 }
 
