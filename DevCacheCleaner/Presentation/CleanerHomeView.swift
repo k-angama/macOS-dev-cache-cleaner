@@ -88,16 +88,19 @@ struct CleanerHomeView: View {
                     }
                     Divider()
                     Button("Help") {
+                        NSApp.activate(ignoringOtherApps: true)
                         openWindow(
                             id: Constants.WindowIds.help,
                         )
                     }
                     Button("About DevCacheCleaner") {
+                        NSApp.activate(ignoringOtherApps: true)
                         openWindow(
                             id: Constants.WindowIds.about,
                         )
                     }
                     Button("Settings") {
+                        NSApp.activate(ignoringOtherApps: true)
                         openWindow(
                             id: Constants.WindowIds.settings,
                         )
@@ -180,6 +183,7 @@ struct CleanerHomeView: View {
         if let categoryName = viewModel.startCleanup(
             includeWorkspaceInAllCaches: includeWorkspaceInAllCaches
         ) {
+            NSApp.activate(ignoringOtherApps: true)
             openWindow(
                 id: Constants.WindowIds.cleanupProgress,
                 value: categoryName
