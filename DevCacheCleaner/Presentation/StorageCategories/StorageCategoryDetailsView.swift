@@ -144,7 +144,6 @@ struct StorageCategoryDetailsView: View {
     ).padding()
 }
 
-#if DEBUG
 private extension StorageCategoryEntity {
     static var detailsPreview: StorageCategoryEntity {
         StorageCategoryEntity(
@@ -181,4 +180,3 @@ private extension StorageCategoryEntity {
         )
     }
 }
-#endif

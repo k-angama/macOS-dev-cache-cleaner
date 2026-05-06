@@ -232,7 +232,7 @@ struct CleanerHomeView: View {
 
 #Preview {
     let container = AppContainer()
-    return container.cleanerHomeDI.startPreview { viewModel in
+    container.cleanerHomeDI.startPreview { viewModel in
         viewModel.isAccessUserDirectory = false
     }
 }
@@ -263,3 +263,4 @@ struct CleanerHomeView: View {
     }
 })
  
+

@@ -35,12 +35,9 @@ final class SupportDI: PresentationDI {
     }()
 }
 
-
-#if DEBUG
 extension SupportDI {
     func startPreview(products: [SupportTipProductEntity]) -> SupportView {
         viewModel.tipProducts = products
         return start()
     }
 }
-#endif

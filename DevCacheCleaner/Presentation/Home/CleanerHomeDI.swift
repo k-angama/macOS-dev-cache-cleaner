@@ -124,11 +124,9 @@ final class CleanerHomeDI: PresentationDI {
     }()
 }
 
-#if DEBUG
 extension CleanerHomeDI {
     func startPreview(configure: (CleanerHomeViewModel) -> Void) -> CleanerHomeView {
         configure(viewModel)
         return start()
     }
 }
-#endif
