@@ -12,6 +12,7 @@ class AppContainer {
     // MARK: - Infrastructure
 
     private lazy var parameters: Parameters = ParametersImpl()
+    private let supportTipsManager = SupportTipsManager()
 
     private lazy var diskRepository: DiskRepository = DiskRepositoryImpl(
         manager: DiskManagerImpl()
@@ -42,6 +43,10 @@ class AppContainer {
 
     private lazy var launchAtStartupPromptRepository: LaunchAtStartupPromptRepository = LaunchAtStartupPromptRepositoryImpl(
         parameters: parameters
+    )
+
+    private lazy var supportTipsRepository: SupportTipsRepository = SupportTipsRepositoryImpl(
+        manager: supportTipsManager
     )
 
     // MARK: - Stores
@@ -116,6 +121,14 @@ class AppContainer {
         launchAtStartupPromptRepository: launchAtStartupPromptRepository
     )
 
+    private lazy var loadSupportTipProductsUseCase = LoadSupportTipProductsUseCase(
+        supportTipsRepository: supportTipsRepository
+    )
+
+    private lazy var purchaseSupportTipUseCase = PurchaseSupportTipUseCase(
+        supportTipsRepository: supportTipsRepository
+    )
+
     // MARK: - ViewModels
 
     lazy var cleanupProgressViewModel = CleanupProgressViewModel(
@@ -149,6 +162,13 @@ class AppContainer {
             resolveLaunchAtStartupStatusUseCase: resolveLaunchAtStartupStatusUseCase,
             updateLaunchAtStartupStatusUseCase: updateLaunchAtStartupStatusUseCase,
             settingsStore: settingsStore
+        )
+    }()
+    
+    lazy var supportViewModel: SupportViewModel = {
+        SupportViewModel(
+            loadSupportTipProductsUseCase: loadSupportTipProductsUseCase,
+            purchaseSupportTipUseCase: purchaseSupportTipUseCase
         )
     }()
 }

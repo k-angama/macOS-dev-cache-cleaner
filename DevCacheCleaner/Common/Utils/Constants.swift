@@ -106,6 +106,7 @@ struct Constants {
         static let cleanupProgress = "cleanup-progress-dev-cache-cleaner"
         static let about = "about-dev-cache-cleaner"
         static let help = "help-dev-cache-cleaner"
+        static let support = "support-dev-cache-cleaner"
         static let settings = "about-dev-cache-settings"
     }
     
@@ -133,4 +134,17 @@ struct Constants {
         static let linkedInURL = URL(string: "https://www.linkedin.com/in/karim-angama")!
         static let gitHub = URL(string: "https://github.com/k-angama/macOS-dev-cache-Cleaner")!
     }
+
+    struct SupportTips {
+        static let coffee = "com.kangama.devcachecleaner.tip.coffee"
+        static let lunch = "com.kangama.devcachecleaner.tip.lunch"
+        static let sponsor = "com.kangama.devcachecleaner.tip.sponsor"
+
+        static let all = [
+            coffee,
+            lunch,
+            sponsor
+        ]
+    }
+
 }

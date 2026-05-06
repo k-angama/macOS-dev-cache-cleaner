@@ -7,12 +7,14 @@
 
 import SwiftUI
 import AppKit
+import StoreKit
 
 struct CleanerHomeView: View {
     @State var viewModel: CleanerHomeViewModel
     @State private var isWorkspaceOpenPanelPresented = false
     @State private var isHomeOpenPanelPresented = false
     @Environment(\.openWindow) var openWindow
+    @Environment(\.requestReview) private var requestReview
     
     var body: some View {
 
@@ -79,19 +81,35 @@ struct CleanerHomeView: View {
             }
             Divider()
             HStack {
+                Button("☕️ Leave a Tip") {
+                    NSApp.activate(ignoringOtherApps: true)
+                    openWindow(
+                        id: Constants.WindowIds.support,
+                    )
+                }
+
+                Button("Review", systemImage: "star") {
+                    NSApp.activate(ignoringOtherApps: true)
+                    requestReview()
+                }
+
                 Spacer()
+
                 Menu {
                     Button("Help") {
+                        NSApp.activate(ignoringOtherApps: true)
                         openWindow(
                             id: Constants.WindowIds.help,
                         )
                     }
                     Button("About DevCacheCleaner") {
+                        NSApp.activate(ignoringOtherApps: true)
                         openWindow(
                             id: Constants.WindowIds.about,
                         )
                     }
                     Button("Settings") {
+                        NSApp.activate(ignoringOtherApps: true)
                         openWindow(
                             id: Constants.WindowIds.settings,
                         )
@@ -101,8 +119,9 @@ struct CleanerHomeView: View {
                         NSApp.terminate(nil)
                     }.keyboardShortcut("q", modifiers: [.control])
                 } label: {
-                    Image(systemName: "gearshape")
+                    Label("Menu", systemImage: "gearshape")
                 }
+                .buttonStyle(.bordered)
             }
 
         }
@@ -174,6 +193,7 @@ struct CleanerHomeView: View {
         if let categoryName = viewModel.startCleanup(
             includeWorkspaceInAllCaches: includeWorkspaceInAllCaches
         ) {
+            NSApp.activate(ignoringOtherApps: true)
             openWindow(
                 id: Constants.WindowIds.cleanupProgress,
                 value: categoryName

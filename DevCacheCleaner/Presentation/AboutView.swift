@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct AboutView: View {
+    @Environment(\.openWindow) private var openWindow
     
     var body: some View {
         VStack(spacing: 16) {
@@ -49,6 +50,11 @@ struct AboutView: View {
             }
             
             Divider()
+
+            Button("Support Development") {
+                openWindow(id: Constants.WindowIds.support)
+            }
+            .buttonStyle(.borderedProminent)
 
             Text("Copyright \(Constants.About.copyright) Karim Angama. All rights reserved.")
                 .font(.footnote)
