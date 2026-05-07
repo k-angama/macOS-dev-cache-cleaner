@@ -13,6 +13,10 @@ struct StorageCategoryDetailsView: View {
     let onCleanSelected: (([StorageSubCategoryEntity]) -> Void)?
     @State var viewModel: StorageCategoryDetailsViewModel
 
+    private var pathsListHeight: CGFloat {
+        min(CGFloat(viewModel.pathCount) * 58, 500)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             headerCard
@@ -95,7 +99,7 @@ struct StorageCategoryDetailsView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             } else {
                 ScrollView {
-                    VStack(spacing: 8) {
+                    LazyVStack(spacing: 8) {
                         ForEach(viewModel.sortedSubcategories) { subcategory in
                             PathRowView(
                                 subcategory: subcategory,
@@ -109,7 +113,8 @@ struct StorageCategoryDetailsView: View {
                             )
                         }
                     }
-                }.frame(maxHeight: 500)
+                }
+                .frame(height: pathsListHeight)
 
                 if onCleanSelected != nil {
                     Divider()
