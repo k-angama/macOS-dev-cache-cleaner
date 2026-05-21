@@ -28,6 +28,10 @@ class CleanupProgressViewModel {
         displayedDeletedSize.byteCountString
     }
 
+    var realDeletedSizeText: String {
+        store.deletedSize.byteCountString
+    }
+
     var totalSizeText: String {
         store.totalSize.byteCountString
     }

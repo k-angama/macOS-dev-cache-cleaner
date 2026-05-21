@@ -62,7 +62,7 @@ struct CleanupProgressViewModelTests {
         #expect(store.categoryName == "Flutter")
     }
 
-    @Test func finish_updatesFinishedStateAndDismissFlag() async {
+    @Test func finish_updatesFinishedStateBeforeAutoDismiss() async {
         let store = CleanupProgressStore()
         let viewModel = CleanupProgressViewModel(store: store)
 
@@ -78,7 +78,7 @@ struct CleanupProgressViewModelTests {
         )
         viewModel.syncDisplayedProgress()
 
-        await store.finish(isComplete: true)
+        store.finish(isComplete: true)
         viewModel.syncDisplayedProgress()
 
         let didAnimateProgress = await waitUntil {
@@ -86,10 +86,11 @@ struct CleanupProgressViewModelTests {
         }
 
         #expect(viewModel.isFinished)
-        #expect(viewModel.shouldDismiss)
+        #expect(viewModel.shouldDismiss == false)
         #expect(didAnimateProgress)
         #expect(viewModel.progress == 1)
         #expect(viewModel.progressPercentage == 100)
+        #expect(viewModel.realDeletedSizeText == CGFloat(4_096).byteCountString)
         #expect(viewModel.deletedSizeText == CGFloat(4_096).byteCountString)
         #expect(viewModel.currentDirectoryPath == nil)
     }

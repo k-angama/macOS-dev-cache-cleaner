@@ -55,7 +55,7 @@ final class CleanupProgressStore {
         shouldDismiss = false
     }
 
-    func finish(isComplete: Bool) async {
+    func finish(isComplete: Bool) {
         let cleanupID = activeCleanupID
         currentDirectory = nil
 
@@ -65,14 +65,14 @@ final class CleanupProgressStore {
 
         isFinished = true
 
-        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
 
-        await MainActor.run {
-            guard self.activeCleanupID == cleanupID else {
+            guard self?.activeCleanupID == cleanupID else {
                 return
             }
 
-            self.shouldDismiss = true
+            self?.shouldDismiss = true
         }
     }
 }
