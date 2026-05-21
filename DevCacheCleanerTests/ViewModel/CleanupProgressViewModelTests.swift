@@ -62,6 +62,21 @@ struct CleanupProgressViewModelTests {
         #expect(store.categoryName == "Flutter")
     }
 
+    @Test func syncDisplayedProgress_whenNewCleanupStarts_resetsDeletedSizeText() {
+        let store = CleanupProgressStore()
+        let viewModel = CleanupProgressViewModel(store: store)
+
+        store.start(categoryName: "Xcode", totalSize: 2_048)
+        store.finish(isComplete: true)
+        viewModel.syncDisplayedProgress()
+
+        store.start(categoryName: "Flutter", totalSize: 1_024)
+        viewModel.syncDisplayedProgress()
+
+        #expect(viewModel.deletedSizeText == CGFloat(0).byteCountString)
+        #expect(viewModel.progress == 0)
+    }
+
     @Test func finish_updatesFinishedStateBeforeAutoDismiss() async {
         let store = CleanupProgressStore()
         let viewModel = CleanupProgressViewModel(store: store)
