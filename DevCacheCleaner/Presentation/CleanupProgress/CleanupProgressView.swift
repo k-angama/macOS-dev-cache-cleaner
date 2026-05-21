@@ -50,6 +50,12 @@ struct CleanupProgressView: View {
                 dismissWindow()
             }
         })
+        .onChange(of: viewModel.realDeletedSize, { _, _ in
+            viewModel.syncDisplayedProgress()
+        })
+        .onChange(of: viewModel.realTotalSize, { _, _ in
+            viewModel.syncDisplayedProgress()
+        })
     }
 
 }
