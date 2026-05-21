@@ -25,12 +25,14 @@ struct DiskRepositoryImpl: DiskRepository {
         homeURL: URL,
         path: String,
         rule: StoragePathRule,
+        expectedDeletedSize: CGFloat,
         onFileDeleted: ((CGFloat) -> Void)?
     ) async throws {
         try await manager.cleanPath(
             path: path,
             rule: rule,
             homeURL: homeURL,
+            expectedDeletedSize: expectedDeletedSize,
             onFileDeleted: onFileDeleted
         )
     }

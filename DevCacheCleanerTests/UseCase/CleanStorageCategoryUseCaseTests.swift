@@ -10,7 +10,6 @@ struct CleanStorageCategoryUseCaseTests {
         repository.totalDiskCapacity = 500
         repository.availableDiskCapacity = 200
         repository.setComputeResponses([2.5, 0], for: ".pub-cache")
-        repository.setCleanFileDeletionSteps([1.0, 1.5], for: ".pub-cache")
 
         let category = makeCategory(
             name: "Flutter",
@@ -33,5 +32,6 @@ struct CleanStorageCategoryUseCaseTests {
         #expect(abs((lastEvent.updatedCategory?.size ?? -1) - 0) < 0.0001)
         #expect(lastEvent.didCompleteFully)
         #expect(repository.cleanedPaths == [repository.key(path: ".pub-cache")])
+        #expect(repository.cleanedExpectedSizes == [2.5])
     }
 }

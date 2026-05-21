@@ -9,10 +9,10 @@ final class DiskRepositoryMock: DiskRepository {
 
     private var computeResponses: [String: [CGFloat]] = [:]
     private var computeDelays: [String: UInt64] = [:]
-    private var cleanFileDeletionSteps: [String: [CGFloat]] = [:]
     private var cleanErrors: [String: Error] = [:]
 
     private(set) var cleanedPaths: [String] = []
+    private(set) var cleanedExpectedSizes: [CGFloat] = []
     private(set) var computeRequests: [String] = []
 
     func setComputeResponses(_ responses: [CGFloat], for path: String, rule: StoragePathRule = .allContents) {
@@ -21,10 +21,6 @@ final class DiskRepositoryMock: DiskRepository {
 
     func setComputeDelay(_ delayNanoseconds: UInt64, for path: String, rule: StoragePathRule = .allContents) {
         computeDelays[key(path: path, rule: rule)] = delayNanoseconds
-    }
-
-    func setCleanFileDeletionSteps(_ steps: [CGFloat], for path: String, rule: StoragePathRule = .allContents) {
-        cleanFileDeletionSteps[key(path: path, rule: rule)] = steps
     }
 
     func setCleanError(_ error: Error, for path: String, rule: StoragePathRule = .allContents) {
@@ -63,15 +59,16 @@ final class DiskRepositoryMock: DiskRepository {
         homeURL: URL,
         path: String,
         rule: StoragePathRule,
+        expectedDeletedSize: CGFloat,
         onFileDeleted: ((CGFloat) -> Void)?
     ) async throws {
         let key = key(path: path, rule: rule)
         cleanedPaths.append(key)
-        let deletionSteps = cleanFileDeletionSteps[key] ?? []
+        cleanedExpectedSizes.append(expectedDeletedSize)
         let error = cleanErrors[key]
 
-        for deletedSize in deletionSteps {
-            onFileDeleted?(deletedSize)
+        if expectedDeletedSize > 0 {
+            onFileDeleted?(expectedDeletedSize)
         }
 
         if let error {
@@ -79,4 +76,3 @@ final class DiskRepositoryMock: DiskRepository {
         }
     }
 }
-
