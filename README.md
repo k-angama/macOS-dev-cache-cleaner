@@ -12,6 +12,17 @@
   DevCacheCleaner scans common cache-heavy directories, shows how much disk space they use, and lets you clean one category, all supported categories, or generated workspace folders with live progress feedback.
 </p>
 
+
+<p align="center">
+  You can download the app from the Mac App Store.
+</p>
+
+<p align="center">
+  <a href="https://apps.apple.com/app/clean-caches-devcachecleaner/id6761360208">
+    <img src="./Ressources/devcachecleaner-mac-app-store.svg" alt="Download on the Mac App Store" width="156" height="40">
+  </a>
+</p>
+
 ---
 
 <p align="center">
