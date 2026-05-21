@@ -62,12 +62,12 @@ struct CleanupProgressViewModelTests {
         #expect(store.categoryName == "Flutter")
     }
 
-    @Test func syncDisplayedProgress_whenNewCleanupStarts_resetsDeletedSizeText() {
+    @Test func syncDisplayedProgress_whenNewCleanupStarts_resetsDeletedSizeText() async {
         let store = CleanupProgressStore()
         let viewModel = CleanupProgressViewModel(store: store)
 
         store.start(categoryName: "Xcode", totalSize: 2_048)
-        store.finish(isComplete: true)
+        await store.finish(isComplete: true)
         viewModel.syncDisplayedProgress()
 
         store.start(categoryName: "Flutter", totalSize: 1_024)
@@ -93,7 +93,7 @@ struct CleanupProgressViewModelTests {
         )
         viewModel.syncDisplayedProgress()
 
-        store.finish(isComplete: true)
+        await store.finish(isComplete: true)
         viewModel.syncDisplayedProgress()
 
         let didAnimateProgress = await waitUntil {

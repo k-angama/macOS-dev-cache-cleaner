@@ -621,7 +621,7 @@ class CleanerHomeViewModel {
                     isAlertErrorRequest = true
                 }
 
-                cleanupProgressStore.finish(isComplete: event.didCompleteFully)
+                await cleanupProgressStore.finish(isComplete: event.didCompleteFully)
             }
         }
 
@@ -726,7 +726,7 @@ class CleanerHomeViewModel {
             isAlertErrorRequest = true
         }
 
-        cleanupProgressStore.finish(isComplete: failedDirectories.isEmpty)
+        await cleanupProgressStore.finish(isComplete: failedDirectories.isEmpty)
     }
 
     @MainActor
@@ -763,7 +763,7 @@ class CleanerHomeViewModel {
                     isAlertErrorRequest = true
                 }
 
-                cleanupProgressStore.finish(isComplete: event.didCompleteFully)
+                await cleanupProgressStore.finish(isComplete: event.didCompleteFully)
             }
         }
 
