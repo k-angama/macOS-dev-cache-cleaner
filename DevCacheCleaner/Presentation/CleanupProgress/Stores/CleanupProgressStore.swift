@@ -67,7 +67,6 @@ final class CleanupProgressStore {
         try? await Task.sleep(nanoseconds: 4_000_000_000)
         Task { @MainActor [weak self] in
             
-
             guard self?.activeCleanupID == cleanupID else {
                 return
             }

@@ -31,6 +31,7 @@ struct DevCacheCleanerApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
+        .defaultPosition(.center)
         
         Window("About DevCacheCleaner", id: Constants.WindowIds.about) {
             AboutView()
@@ -39,6 +40,7 @@ struct DevCacheCleanerApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
+        .defaultPosition(.center)
 
         Window("Help DevCacheCleaner", id: Constants.WindowIds.help) {
             HelpView()
@@ -47,6 +49,7 @@ struct DevCacheCleanerApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
+        .defaultPosition(.center)
 
         Window("Support DevCacheCleaner", id: Constants.WindowIds.support) {
             container.supportDI.start()
@@ -55,6 +58,7 @@ struct DevCacheCleanerApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
+        .defaultPosition(.center)
         
         Window("Settings DevCacheCleaner", id: Constants.WindowIds.settings) {
             container.settingsDI.start()
@@ -63,5 +67,6 @@ struct DevCacheCleanerApp: App {
                 .windowResizeBehavior(.disabled)
         }
         .windowResizability(.contentSize)
+        .defaultPosition(.center)
     }
 }

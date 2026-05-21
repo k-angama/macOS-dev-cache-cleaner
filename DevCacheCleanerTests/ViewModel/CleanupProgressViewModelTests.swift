@@ -77,7 +77,7 @@ struct CleanupProgressViewModelTests {
         #expect(viewModel.progress == 0)
     }
 
-    @Test func finish_updatesFinishedStateBeforeAutoDismiss() async {
+    @Test func finish_updatesFinishedStateAndDismissFlag() async {
         let store = CleanupProgressStore()
         let viewModel = CleanupProgressViewModel(store: store)
 
@@ -101,7 +101,7 @@ struct CleanupProgressViewModelTests {
         }
 
         #expect(viewModel.isFinished)
-        #expect(viewModel.shouldDismiss == false)
+        #expect(viewModel.shouldDismiss)
         #expect(didAnimateProgress)
         #expect(viewModel.progress == 1)
         #expect(viewModel.progressPercentage == 100)

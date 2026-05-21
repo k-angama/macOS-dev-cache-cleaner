@@ -31,9 +31,14 @@ struct CleanupProgressView: View {
                 .frame(maxWidth: .infinity)
             } else {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Cleaning cache files...")
-                        .font(.title3)
-                        .bold()
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .controlSize(.small)
+
+                        Text("Cleaning cache files...")
+                            .font(.title3)
+                            .bold()
+                    }
 
                     Text(viewModel.categoryName)
                         .font(.subheadline)
