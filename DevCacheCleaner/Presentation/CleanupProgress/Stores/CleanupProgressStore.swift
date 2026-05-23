@@ -64,15 +64,14 @@ final class CleanupProgressStore {
         }
 
         isFinished = true
-
-        try? await Task.sleep(nanoseconds: 1_500_000_000)
-
-        await MainActor.run {
-            guard self.activeCleanupID == cleanupID else {
+        try? await Task.sleep(nanoseconds: 4_000_000_000)
+        Task { @MainActor [weak self] in
+            
+            guard self?.activeCleanupID == cleanupID else {
                 return
             }
 
-            self.shouldDismiss = true
+            self?.shouldDismiss = true
         }
     }
 }

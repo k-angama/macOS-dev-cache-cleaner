@@ -11,8 +11,6 @@ struct CleanAllStorageCategoriesUseCaseTests {
         repository.availableDiskCapacity = 100
         repository.setComputeResponses([1.0, 0], for: "Cache/A")
         repository.setComputeResponses([2.0, 0], for: "Cache/B")
-        repository.setCleanFileDeletionSteps([1.0], for: "Cache/A")
-        repository.setCleanFileDeletionSteps([2.0], for: "Cache/B")
 
         let cleanStorageCategoryUseCase = CleanStorageCategoryUseCase(diskRepository: repository)
         let cleanAllStorageCategoriesUseCase = CleanAllStorageCategoriesUseCase(
@@ -38,5 +36,6 @@ struct CleanAllStorageCategoriesUseCaseTests {
             repository.key(path: "Cache/A"),
             repository.key(path: "Cache/B")
         ])
+        #expect(repository.cleanedExpectedSizes == [1.0, 2.0])
     }
 }

@@ -15,6 +15,7 @@ public protocol DiskRepository {
         homeURL: URL,
         path: String,
         rule: StoragePathRule,
+        expectedDeletedSize: CGFloat,
         onFileDeleted: ((CGFloat) -> Void)?
     ) async throws
 }

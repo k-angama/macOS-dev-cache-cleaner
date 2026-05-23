@@ -46,7 +46,6 @@ struct CleanerHomeViewModelTests {
 
         context.homeAccessRepository.resolvedURL = testHomeURL
         context.diskRepository.setComputeResponses([2.5, 0], for: ".pub-cache")
-        context.diskRepository.setCleanFileDeletionSteps([1.0, 1.5], for: ".pub-cache")
         context.viewModel.categories = [category]
 
         context.viewModel.askRemoveDirectory(entity: category)
@@ -82,8 +81,6 @@ struct CleanerHomeViewModelTests {
         context.homeAccessRepository.resolvedURL = testHomeURL
         context.diskRepository.setComputeResponses([1.0, 0], for: "Cache/A")
         context.diskRepository.setComputeResponses([2.0, 0], for: "Cache/B")
-        context.diskRepository.setCleanFileDeletionSteps([1.0], for: "Cache/A")
-        context.diskRepository.setCleanFileDeletionSteps([2.0], for: "Cache/B")
         context.viewModel.categories = [firstCategory, secondCategory]
 
         context.viewModel.askRemoveAllCaches()
@@ -118,8 +115,6 @@ struct CleanerHomeViewModelTests {
         context.scannerRepository.cleanupDirectories = ["node_modules"]
         context.diskRepository.setComputeResponses([1.0, 0], for: "Cache/A")
         context.diskRepository.setComputeResponses([25, 25, 0], for: "node_modules")
-        context.diskRepository.setCleanFileDeletionSteps([1.0], for: "Cache/A")
-        context.diskRepository.setCleanFileDeletionSteps([25], for: "node_modules")
         context.viewModel.categories = [category]
         context.viewModel.selectWorkspace(url: workspaceURL)
 
@@ -355,7 +350,6 @@ struct CleanerHomeViewModelTests {
 
         context.scannerRepository.cleanupDirectories = ["node_modules"]
         context.diskRepository.setComputeResponses([25, 25, 0], for: "node_modules")
-        context.diskRepository.setCleanFileDeletionSteps([25], for: "node_modules")
 
         context.viewModel.selectWorkspace(url: workspaceURL)
 

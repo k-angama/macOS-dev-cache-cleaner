@@ -16,6 +16,7 @@ final class CleanupProgressDI: PresentationDI {
 
     func start(data selectedCategoryName: String) -> CleanupProgressView {
         viewModel.setCategoryName(selectedCategoryName)
+        viewModel.syncDisplayedProgress()
         return CleanupProgressView(viewModel: viewModel)
     }
 

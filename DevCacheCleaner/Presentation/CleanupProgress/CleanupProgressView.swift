@@ -13,35 +13,55 @@ struct CleanupProgressView: View {
     @Environment(\.dismissWindow) private var dismissWindow
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Cleaning cache files...")
-                .font(.title3)
-                .bold()
+        Group {
+            if viewModel.isFinished {
+                VStack(spacing: 10) {
+                    Text("✅")
+                        .font(.title)
 
-            Text(viewModel.categoryName)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                    Text("Cleanup complete")
+                        .font(.title3)
+                        .bold()
 
-            Text(
-                viewModel.isFinished
-                ? "Finished!"
-                : (viewModel.currentDirectoryPath ?? "Preparing cleanup...")
-            )
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
+                    Text("Deleted \(viewModel.realDeletedSizeText) of cache files.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.bottom)
+                .frame(maxWidth: .infinity)
+            } else {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .controlSize(.small)
 
-            HStack {
-                Text("\(viewModel.deletedSizeText) of \(viewModel.totalSizeText) deleted")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("\(viewModel.progressPercentage)%")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                        Text("Cleaning cache files...")
+                            .font(.title3)
+                            .bold()
+                    }
+
+                    Text(viewModel.categoryName)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    Text(viewModel.currentDirectoryPath ?? "Preparing cleanup...")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    HStack {
+                        Text("\(viewModel.deletedSizeText) of \(viewModel.totalSizeText) deleted")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text("\(viewModel.progressPercentage)%")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    ProgressView(value: viewModel.progress, total: 1)
+                        .progressViewStyle(.linear)
+                }
             }
-
-            ProgressView(value: viewModel.progress, total: 1)
-                .progressViewStyle(.linear)
         }
         .padding()
         .padding(.top, 0)
@@ -49,6 +69,12 @@ struct CleanupProgressView: View {
             if newValue {
                 dismissWindow()
             }
+        })
+        .onChange(of: viewModel.realDeletedSize, { _, _ in
+            viewModel.syncDisplayedProgress()
+        })
+        .onChange(of: viewModel.realTotalSize, { _, _ in
+            viewModel.syncDisplayedProgress()
         })
     }
 

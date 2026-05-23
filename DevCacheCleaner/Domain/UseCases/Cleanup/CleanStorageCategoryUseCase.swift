@@ -68,6 +68,7 @@ struct CleanStorageCategoryUseCase {
                             homeURL: homeURL,
                             path: subCategory.path,
                             rule: subCategory.rule,
+                            expectedDeletedSize: subCategory.size,
                             onFileDeleted: { deletedFileSize in
                                 deletedSizeForCurrentPath += deletedFileSize
                                 continuation.yield(

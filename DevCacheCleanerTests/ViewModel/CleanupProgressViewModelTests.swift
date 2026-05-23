@@ -5,7 +5,7 @@ import Testing
 @MainActor
 struct CleanupProgressViewModelTests {
 
-    @Test func computedProperties_reflectStoreState() {
+    @Test func computedProperties_reflectStoreState() async {
         let store = CleanupProgressStore()
         let viewModel = CleanupProgressViewModel(store: store)
         let currentDirectory = StorageSubCategoryEntity(
@@ -20,9 +20,15 @@ struct CleanupProgressViewModelTests {
             deletedSize: 1_536,
             totalSize: 2_048
         )
+        viewModel.syncDisplayedProgress()
+
+        let didAnimateProgress = await waitUntil {
+            viewModel.progress == 0.75
+        }
 
         #expect(viewModel.categoryName == "Flutter")
         #expect(viewModel.currentDirectoryPath == "/Users/kangama/.pub-cache")
+        #expect(didAnimateProgress)
         #expect(viewModel.progress == 0.75)
         #expect(viewModel.progressPercentage == 75)
         #expect(viewModel.deletedSizeText == CGFloat(1_536).byteCountString)
@@ -31,13 +37,19 @@ struct CleanupProgressViewModelTests {
         #expect(viewModel.shouldDismiss == false)
     }
 
-    @Test func progressPercentage_roundsStoreProgress() {
+    @Test func progressPercentage_roundsStoreProgress() async {
         let store = CleanupProgressStore()
         let viewModel = CleanupProgressViewModel(store: store)
 
         store.start(categoryName: "Xcode", totalSize: 3)
         store.update(currentDirectory: nil, deletedSize: 2, totalSize: 3)
+        viewModel.syncDisplayedProgress()
 
+        let didAnimateProgress = await waitUntil {
+            viewModel.progressPercentage == 67
+        }
+
+        #expect(didAnimateProgress)
         #expect(viewModel.progressPercentage == 67)
     }
 
@@ -48,6 +60,21 @@ struct CleanupProgressViewModelTests {
         viewModel.setCategoryName("Flutter")
 
         #expect(store.categoryName == "Flutter")
+    }
+
+    @Test func syncDisplayedProgress_whenNewCleanupStarts_resetsDeletedSizeText() async {
+        let store = CleanupProgressStore()
+        let viewModel = CleanupProgressViewModel(store: store)
+
+        store.start(categoryName: "Xcode", totalSize: 2_048)
+        await store.finish(isComplete: true)
+        viewModel.syncDisplayedProgress()
+
+        store.start(categoryName: "Flutter", totalSize: 1_024)
+        viewModel.syncDisplayedProgress()
+
+        #expect(viewModel.deletedSizeText == CGFloat(0).byteCountString)
+        #expect(viewModel.progress == 0)
     }
 
     @Test func finish_updatesFinishedStateAndDismissFlag() async {
@@ -64,13 +91,21 @@ struct CleanupProgressViewModelTests {
             deletedSize: 2_048,
             totalSize: 4_096
         )
+        viewModel.syncDisplayedProgress()
 
         await store.finish(isComplete: true)
+        viewModel.syncDisplayedProgress()
+
+        let didAnimateProgress = await waitUntil {
+            viewModel.progress == 1
+        }
 
         #expect(viewModel.isFinished)
         #expect(viewModel.shouldDismiss)
+        #expect(didAnimateProgress)
         #expect(viewModel.progress == 1)
         #expect(viewModel.progressPercentage == 100)
+        #expect(viewModel.realDeletedSizeText == CGFloat(4_096).byteCountString)
         #expect(viewModel.deletedSizeText == CGFloat(4_096).byteCountString)
         #expect(viewModel.currentDirectoryPath == nil)
     }

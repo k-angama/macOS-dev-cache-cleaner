@@ -15,6 +15,7 @@ protocol DiskManager {
         path: String,
         rule: StoragePathRule,
         homeURL: URL,
+        expectedDeletedSize: CGFloat,
         onFileDeleted: ((CGFloat) -> Void)?
     ) async throws
     func computeDiskSize(homeURL: URL, path: String, rule: StoragePathRule) async -> CGFloat
@@ -83,32 +84,18 @@ class DiskManagerImpl: DiskManager {
         return total
     }
 
-    private func fileSize(at url: URL) -> CGFloat {
-        guard
-            let values = try? url.resourceValues(
-                forKeys: [.isRegularFileKey, .totalFileAllocatedSizeKey, .fileAllocatedSizeKey]
-            ),
-            values.isRegularFile == true
-        else {
-            return 0
-        }
-
-        let size = values.totalFileAllocatedSize ?? values.fileAllocatedSize ?? 0
-        return size.toCGFloat
-    }
-
     private func deleteContents(
         of url: URL,
         fileManager: FileManager,
+        expectedDeletedSize: CGFloat,
         onFileDeleted: ((CGFloat) -> Void)?
     ) throws {
         let values = try url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
 
         guard values.isDirectory == true, values.isSymbolicLink != true else {
-            let deletedFileSize = fileSize(at: url)
             try fileManager.removeItem(at: url)
-            if deletedFileSize > 0 {
-                onFileDeleted?(deletedFileSize)
+            if expectedDeletedSize > 0 {
+                onFileDeleted?(expectedDeletedSize)
             }
             return
         }
@@ -120,45 +107,36 @@ class DiskManagerImpl: DiskManager {
         )
 
         for itemURL in items {
-            try deleteItemRecursively(
-                at: itemURL,
-                fileManager: fileManager,
-                onFileDeleted: onFileDeleted
-            )
+            try fileManager.removeItem(at: itemURL)
+        }
+
+        if expectedDeletedSize > 0 {
+            onFileDeleted?(expectedDeletedSize)
         }
     }
 
-    private func deleteItemRecursively(
-        at url: URL,
+    private func deleteMatchingChildren(
+        of url: URL,
+        prefix: String,
         fileManager: FileManager,
+        expectedDeletedSize: CGFloat,
         onFileDeleted: ((CGFloat) -> Void)?
     ) throws {
-        let values = try url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+        let items = try fileManager.contentsOfDirectory(
+            at: url,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        )
+        var didDeleteItem = false
 
-        if values.isDirectory == true, values.isSymbolicLink != true {
-            let children = try fileManager.contentsOfDirectory(
-                at: url,
-                includingPropertiesForKeys: nil,
-                options: []
-            )
-
-            for childURL in children {
-                try deleteItemRecursively(
-                    at: childURL,
-                    fileManager: fileManager,
-                    onFileDeleted: onFileDeleted
-                )
-            }
-        } else {
-            let deletedFileSize = fileSize(at: url)
-            try fileManager.removeItem(at: url)
-            if deletedFileSize > 0 {
-                onFileDeleted?(deletedFileSize)
-            }
-            return
+        for itemURL in items where itemURL.lastPathComponent.hasPrefix(prefix) {
+            try fileManager.removeItem(at: itemURL)
+            didDeleteItem = true
         }
 
-        try fileManager.removeItem(at: url)
+        if didDeleteItem, expectedDeletedSize > 0 {
+            onFileDeleted?(expectedDeletedSize)
+        }
     }
     
 }
@@ -171,6 +149,7 @@ extension DiskManagerImpl {
         path: String,
         rule: StoragePathRule,
         homeURL: URL,
+        expectedDeletedSize: CGFloat,
         onFileDeleted: ((CGFloat) -> Void)?
     ) async throws {
         
@@ -195,22 +174,17 @@ extension DiskManagerImpl {
                             try self.deleteContents(
                                 of: targetURL,
                                 fileManager: fm,
+                                expectedDeletedSize: expectedDeletedSize,
                                 onFileDeleted: onFileDeleted
                             )
                         case .childNamePrefix(let prefix):
-                            let items = try fm.contentsOfDirectory(
-                                at: targetURL,
-                                includingPropertiesForKeys: nil,
-                                options: [.skipsHiddenFiles]
+                            try self.deleteMatchingChildren(
+                                of: targetURL,
+                                prefix: prefix,
+                                fileManager: fm,
+                                expectedDeletedSize: expectedDeletedSize,
+                                onFileDeleted: onFileDeleted
                             )
-
-                            for itemURL in items where itemURL.lastPathComponent.hasPrefix(prefix) {
-                                try self.deleteItemRecursively(
-                                    at: itemURL,
-                                    fileManager: fm,
-                                    onFileDeleted: onFileDeleted
-                                )
-                            }
                         }
                     }
 
