@@ -9,20 +9,16 @@ import SwiftUI
 
 @main
 struct DevCacheCleanerApp: App {
-    private var container = AppContainer()
+    private let container: AppContainer
+    private let menuBarPanelController: MenuBarPanelController
+
+    init() {
+        let container = AppContainer()
+        self.container = container
+        self.menuBarPanelController = MenuBarPanelController(container: container)
+    }
 
     var body: some Scene {
-        MenuBarExtra {
-            container.cleanerHomeDI.start()
-                .frame(width: 600)
-        } label: {
-            Image("FeatherDusterIcon")
-                .renderingMode(.template)
-                .interpolation(.high)
-                .accessibilityLabel("DevCacheCleaner")
-        }
-        .menuBarExtraStyle(.window)
-        
         WindowGroup("Cleanup Progress", id: Constants.WindowIds.cleanupProgress, for: String.self) { $categoryName in
             if let categoryName = categoryName {
                 container.cleanupProgressDI.start(data: categoryName)
