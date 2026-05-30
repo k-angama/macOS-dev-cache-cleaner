@@ -100,6 +100,15 @@ struct Constants {
                     StoragePath(".pub-cache"),
                 ]
             ),
+            StorageItem(
+                title: "Design App Caches",
+                color: .purple,
+                paths: [
+                    StoragePath("Library/Application Support/Figma"),
+                    StoragePath("Library/Application Support/Adobe/Common"),
+                    StoragePath("Library/Containers/Motion/Data/Library/Caches/com.apple.motionapp/Retiming Cache Files"),
+                ]
+            ),
         ]
     }
     
