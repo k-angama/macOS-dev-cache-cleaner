@@ -8,8 +8,6 @@
 import SwiftUI
 
 struct StorageCategoryDetailsView: View {
-    static let panelWidth: CGFloat = 460
-
     let onCleanSelected: (([StorageSubCategoryEntity]) -> Void)?
     @State var viewModel: StorageCategoryDetailsViewModel
 
@@ -26,7 +24,7 @@ struct StorageCategoryDetailsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .fixedSize(horizontal: false, vertical: true)
-        .frame(width: Self.panelWidth, alignment: .topLeading)
+        .frame(width: Constants.StorageCategoryDetails.panelWidth, alignment: .topLeading)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }

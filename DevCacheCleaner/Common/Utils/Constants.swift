@@ -109,6 +109,10 @@ struct Constants {
         static let support = "support-dev-cache-cleaner"
         static let settings = "about-dev-cache-settings"
     }
+
+    struct StorageCategoryDetails {
+        static let panelWidth: CGFloat = 460
+    }
     
     struct About {
         static var version: String = {

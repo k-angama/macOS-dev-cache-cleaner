@@ -61,7 +61,7 @@ final class MenuBarPanelController: NSObject {
         // Keep these values aligned with the detail panel layout. They are used
         // before the detail panel opens so the home panel leaves enough room for
         // it when the screen width allows.
-        static let detailPanelWidth: CGFloat = StorageCategoryDetailsView.panelWidth
+        static let detailPanelWidth: CGFloat = Constants.StorageCategoryDetails.panelWidth
         static let detailPanelGap: CGFloat = 12
         static let screenPadding: CGFloat = 8
     }
