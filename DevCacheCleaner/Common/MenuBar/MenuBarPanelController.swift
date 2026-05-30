@@ -12,6 +12,8 @@ import SwiftUI
 final class MenuBarPanelController: NSObject {
     private enum Layout {
         static let homePanelWidth: CGFloat = 600
+        static let detailPanelWidth: CGFloat = StorageCategoryDetailsView.panelWidth
+        static let detailPanelGap: CGFloat = 12
         static let screenPadding: CGFloat = 8
     }
 
@@ -114,15 +116,42 @@ final class MenuBarPanelController: NSObject {
             ?? .zero
 
         var panelFrame = panel.frame
-        panelFrame.origin.x = buttonFrameInScreen.midX - (panelFrame.width / 2)
+        panelFrame.origin.x = homePanelOriginX(
+            panelWidth: panelFrame.width,
+            buttonFrame: buttonFrameInScreen,
+            visibleFrame: visibleFrame
+        )
         panelFrame.origin.y = visibleFrame.maxY - panelFrame.height
 
-        panelFrame.origin.x = min(
-            max(panelFrame.origin.x, visibleFrame.minX + Layout.screenPadding),
-            visibleFrame.maxX - panelFrame.width - Layout.screenPadding
-        )
         panelFrame.origin.y = max(panelFrame.origin.y, visibleFrame.minY + Layout.screenPadding)
 
         panel.setFrame(panelFrame, display: false)
+    }
+
+    private func homePanelOriginX(
+        panelWidth: CGFloat,
+        buttonFrame: NSRect,
+        visibleFrame: NSRect
+    ) -> CGFloat {
+        let minX = visibleFrame.minX + Layout.screenPadding
+        let maxX = visibleFrame.maxX - panelWidth - Layout.screenPadding
+        let detailSpaceWidth = panelWidth + Layout.detailPanelGap + Layout.detailPanelWidth
+        let hasEnoughWidthForDetails = visibleFrame.width >= detailSpaceWidth + (Layout.screenPadding * 2)
+
+        guard hasEnoughWidthForDetails else {
+            return maxX
+        }
+
+        let leftAlignedX = buttonFrame.minX
+        if leftAlignedX >= minX, leftAlignedX + detailSpaceWidth <= visibleFrame.maxX - Layout.screenPadding {
+            return leftAlignedX
+        }
+
+        let rightAlignedX = buttonFrame.maxX - panelWidth
+        if rightAlignedX >= minX, rightAlignedX <= maxX {
+            return rightAlignedX
+        }
+
+        return maxX
     }
 }
