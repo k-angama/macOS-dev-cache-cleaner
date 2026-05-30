@@ -48,11 +48,12 @@ struct Constants {
                 ]
             ),
             StorageItem(
-                title: "npm/yarn Caches",
+                title: "npm/yarn/Bun Caches",
                 color: .orange,
                 paths: [
                     StoragePath("Library/Caches/Yarn"),
                     StoragePath(".npm-cache-user/_cacache"),
+                    StoragePath(".bun/install/cache"),
                 ]
             ),
             StorageItem(
