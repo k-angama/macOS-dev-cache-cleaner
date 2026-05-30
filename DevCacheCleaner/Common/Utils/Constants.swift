@@ -123,6 +123,14 @@ struct Constants {
     struct StorageCategoryDetails {
         static let panelWidth: CGFloat = 460
     }
+
+    struct StorageUsage {
+        static let categoryRowHeight: CGFloat = 32
+        static let categoryActionWidth: CGFloat = 120
+        static let workspaceRowHeight: CGFloat = 42
+        static let workspaceStateWidth: CGFloat = 82
+        static let cleanAllRowHeight: CGFloat = 32
+    }
     
     struct About {
         static var version: String = {
