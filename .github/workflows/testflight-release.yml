@@ -53,7 +53,7 @@ jobs:
 
           if ! security find-identity -v -p codesigning "$KEYCHAIN_PATH"; then
             echo "No code signing identity was found in the imported .p12 certificate."
-            echo "Export the Apple Distribution certificate together with its private key from Keychain Access."
+            echo "Export the Mac App Distribution certificate together with its private key from Keychain Access."
             exit 1
           fi
 
@@ -87,7 +87,7 @@ jobs:
             -authenticationKeyPath "$APP_STORE_CONNECT_API_KEY_PATH" \
             -authenticationKeyID "${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}" \
             -authenticationKeyIssuerID "${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}" \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
+            CODE_SIGN_IDENTITY="Mac App Distribution" \
             CODE_SIGN_STYLE=Manual \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
             DEVELOPMENT_TEAM=FEV8Q8DHKC \
