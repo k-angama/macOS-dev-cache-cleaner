@@ -194,12 +194,12 @@ struct StorageUsageView: View {
                             }
                         }
                         .frame(
-                            minWidth: Constants.StorageUsage.categoryActionWidth,
+                            minWidth: Constants.Layout.HomePanel.StorageUsage.categoryActionWidth,
                             alignment: .trailing
                         )
                         .animation(.easeInOut(duration: 0.2), value: state)
                     }
-                    .frame(height: Constants.StorageUsage.categoryRowHeight)
+                    .frame(height: Constants.Layout.HomePanel.StorageUsage.categoryRowHeight)
                 }
                 
                 Divider()
@@ -243,7 +243,7 @@ struct StorageUsageView: View {
                 .help("Clean all caches")
                 .disabled(isCleaning || totalCategoriesSize <= 0.01)
             }
-            .frame(height: Constants.StorageUsage.cleanAllRowHeight)
+            .frame(height: Constants.Layout.HomePanel.StorageUsage.cleanAllRowHeight)
         }
     }
 }

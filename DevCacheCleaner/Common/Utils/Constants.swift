@@ -119,17 +119,25 @@ struct Constants {
         static let support = "support-dev-cache-cleaner"
         static let settings = "about-dev-cache-settings"
     }
+    
+    struct Layout {
+        struct DetailPanel {
+            static let panelWidth: CGFloat = 460
+            static let gap: CGFloat = 12
+        }
 
-    struct StorageCategoryDetails {
-        static let panelWidth: CGFloat = 460
-    }
-
-    struct StorageUsage {
-        static let categoryRowHeight: CGFloat = 32
-        static let categoryActionWidth: CGFloat = 120
-        static let workspaceRowHeight: CGFloat = 42
-        static let workspaceStateWidth: CGFloat = 82
-        static let cleanAllRowHeight: CGFloat = 32
+        struct HomePanel {
+            static let panelWidth: CGFloat = 600
+            static let screenPadding: CGFloat = 8
+            
+            struct StorageUsage {
+                static let categoryRowHeight: CGFloat = 32
+                static let categoryActionWidth: CGFloat = 120
+                static let workspaceRowHeight: CGFloat = 42
+                static let workspaceStateWidth: CGFloat = 82
+                static let cleanAllRowHeight: CGFloat = 32
+            }
+        }
     }
     
     struct About {

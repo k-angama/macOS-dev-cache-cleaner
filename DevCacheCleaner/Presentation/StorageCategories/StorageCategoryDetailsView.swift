@@ -24,7 +24,7 @@ struct StorageCategoryDetailsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .fixedSize(horizontal: false, vertical: true)
-        .frame(width: Constants.StorageCategoryDetails.panelWidth, alignment: .topLeading)
+        .frame(width: Constants.Layout.DetailPanel.panelWidth, alignment: .topLeading)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }

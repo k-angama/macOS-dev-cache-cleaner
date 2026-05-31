@@ -14,7 +14,7 @@ import SwiftUI
 /// storage detail panel and delete confirmation alerts, receive focus. A plain
 /// SwiftUI menu-bar presentation closes as soon as focus moves away, so this
 /// controller owns the AppKit panel directly.
-private final class MenuBarHomePanel: NSPanel {
+private class MenuBarHomePanel: NSPanel {
     /// Called after the panel loses key status to decide whether that loss of
     /// focus should close the menu panel.
     ///
@@ -54,18 +54,7 @@ private final class MenuBarHomePanel: NSPanel {
 }
 
 @MainActor
-final class MenuBarPanelController: NSObject {
-    private enum Layout {
-        static let homePanelWidth: CGFloat = 600
-
-        // Keep these values aligned with the detail panel layout. They are used
-        // before the detail panel opens so the home panel leaves enough room for
-        // it when the screen width allows.
-        static let detailPanelWidth: CGFloat = Constants.StorageCategoryDetails.panelWidth
-        static let detailPanelGap: CGFloat = 12
-        static let screenPadding: CGFloat = 8
-    }
-
+class MenuBarPanelController: NSObject {
     private let container: AppContainer
     private let statusItem: NSStatusItem
     private var homePanel: NSPanel?
@@ -206,13 +195,13 @@ final class MenuBarPanelController: NSObject {
         }
 
         let contentView = container.cleanerHomeDI.start()
-            .frame(width: Layout.homePanelWidth)
+            .frame(width: Constants.Layout.HomePanel.panelWidth)
             .background(.regularMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 
         let hostingController = NSHostingController(rootView: contentView.ignoresSafeArea())
         let panel = MenuBarHomePanel(
-            contentRect: NSRect(x: 0, y: 0, width: Layout.homePanelWidth, height: 1),
+            contentRect: NSRect(x: 0, y: 0, width: Constants.Layout.HomePanel.panelWidth, height: 1),
             styleMask: [.nonactivatingPanel, .borderless],
             backing: .buffered,
             defer: false
@@ -277,7 +266,7 @@ final class MenuBarPanelController: NSObject {
             visibleFrame: visibleFrame
         )
         let preferredY = visibleFrame.maxY - panelFrame.height
-        let minimumY = visibleFrame.minY + Layout.screenPadding
+        let minimumY = visibleFrame.minY + Constants.Layout.HomePanel.screenPadding
         panelFrame.origin.y = max(preferredY, minimumY)
 
         panel.setFrame(panelFrame, display: false)
@@ -288,10 +277,10 @@ final class MenuBarPanelController: NSObject {
         buttonFrame: NSRect,
         visibleFrame: NSRect
     ) -> CGFloat {
-        let minX = visibleFrame.minX + Layout.screenPadding
-        let maxX = visibleFrame.maxX - panelWidth - Layout.screenPadding
-        let detailSpaceWidth = panelWidth + Layout.detailPanelGap + Layout.detailPanelWidth
-        let hasEnoughWidthForDetails = visibleFrame.width >= detailSpaceWidth + (Layout.screenPadding * 2)
+        let minX = visibleFrame.minX + Constants.Layout.HomePanel.screenPadding
+        let maxX = visibleFrame.maxX - panelWidth - Constants.Layout.HomePanel.screenPadding
+        let detailSpaceWidth = panelWidth + Constants.Layout.DetailPanel.gap + Constants.Layout.DetailPanel.panelWidth
+        let hasEnoughWidthForDetails = visibleFrame.width >= detailSpaceWidth + (Constants.Layout.HomePanel.screenPadding * 2)
 
         // On narrow screens, pin the home panel to the right edge. This leaves
         // the most predictable space for the detail panel when it opens.
@@ -302,7 +291,7 @@ final class MenuBarPanelController: NSObject {
         // Prefer the same x-origin as the menu-bar icon, but only when the home
         // panel plus detail panel can still fit on screen.
         let leftAlignedX = buttonFrame.minX
-        if leftAlignedX >= minX, leftAlignedX + detailSpaceWidth <= visibleFrame.maxX - Layout.screenPadding {
+        if leftAlignedX >= minX, leftAlignedX + detailSpaceWidth <= visibleFrame.maxX - Constants.Layout.HomePanel.screenPadding {
             return leftAlignedX
         }
 
