@@ -35,7 +35,7 @@ jobs:
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          CERTIFICATE_PATH="$RUNNER_TEMP/mac-app-distribution.p12"
+          CERTIFICATE_PATH="$RUNNER_TEMP/apple-distribution.p12"
 
           printf '%s' "$APPLE_CERTIFICATE_P12_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
 
@@ -51,12 +51,9 @@ jobs:
             -T /usr/bin/security \
             -T /usr/bin/productbuild
 
-          SIGNING_IDENTITIES="$(security find-identity -v -p codesigning "$KEYCHAIN_PATH")"
-          echo "$SIGNING_IDENTITIES"
-
-          if ! echo "$SIGNING_IDENTITIES" | grep -q "Mac App Distribution"; then
+          if ! security find-identity -v -p codesigning "$KEYCHAIN_PATH"; then
             echo "No code signing identity was found in the imported .p12 certificate."
-            echo "The APPLE_CERTIFICATE_P12_BASE64 secret must contain a Mac App Distribution certificate with its private key for team FEV8Q8DHKC."
+            echo "Export the Mac App Distribution certificate together with its private key from Keychain Access."
             exit 1
           fi
 
