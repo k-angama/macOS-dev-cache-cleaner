@@ -205,7 +205,7 @@ final class MenuBarPanelController: NSObject {
         let hostingController = NSHostingController(rootView: contentView.ignoresSafeArea())
         let panel = MenuBarHomePanel(
             contentRect: NSRect(x: 0, y: 0, width: Layout.homePanelWidth, height: 1),
-            styleMask: [.nonactivatingPanel, .titled, .fullSizeContentView],
+            styleMask: [.nonactivatingPanel, .borderless],
             backing: .buffered,
             defer: false
         )
@@ -274,9 +274,9 @@ final class MenuBarPanelController: NSObject {
             buttonFrame: buttonFrameInScreen,
             visibleFrame: visibleFrame
         )
-        panelFrame.origin.y = visibleFrame.maxY - panelFrame.height
-
-        panelFrame.origin.y = max(panelFrame.origin.y, visibleFrame.minY + Layout.screenPadding)
+        let preferredY = visibleFrame.maxY - panelFrame.height
+        let minimumY = visibleFrame.minY + Layout.screenPadding
+        panelFrame.origin.y = max(preferredY, minimumY)
 
         panel.setFrame(panelFrame, display: false)
     }
