@@ -65,10 +65,15 @@ jobs:
         run: |
           PROVISIONING_PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
           PROVISIONING_PROFILE_PATH="$PROVISIONING_PROFILE_DIR/DevCacheCleaner.provisionprofile"
+          PROVISIONING_PROFILE_PLIST="$RUNNER_TEMP/DevCacheCleanerProvisioningProfile.plist"
 
           mkdir -p "$PROVISIONING_PROFILE_DIR"
           printf '%s' "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$PROVISIONING_PROFILE_PATH"
+          security cms -D -i "$PROVISIONING_PROFILE_PATH" > "$PROVISIONING_PROFILE_PLIST"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" "$PROVISIONING_PROFILE_PLIST")
+
           echo "PROVISIONING_PROFILE_PATH=$PROVISIONING_PROFILE_PATH" >> "$GITHUB_ENV"
+          echo "PROVISIONING_PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
 
       - name: Archive release build
         run: |
@@ -83,9 +88,10 @@ jobs:
             -authenticationKeyID "${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}" \
             -authenticationKeyIssuerID "${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
-            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_STYLE=Manual \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
-            DEVELOPMENT_TEAM=FEV8Q8DHKC
+            DEVELOPMENT_TEAM=FEV8Q8DHKC \
+            PROVISIONING_PROFILE="$PROVISIONING_PROFILE_UUID"
 
       - name: Upload archive to TestFlight
         run: |
