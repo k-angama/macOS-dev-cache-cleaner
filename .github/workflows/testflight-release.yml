@@ -1,24 +1,23 @@
 name: Upload TestFlight Release
 
 on:
-  pull_request:
-    branches:
-      - main
+  workflow_run:
+    workflows:
+      - Test Before Merge
     types:
-      - opened
-      - synchronize
-      - reopened
-      - ready_for_review
+      - completed
   workflow_dispatch:
 
 jobs:
   upload-testflight:
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'release/')
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'release/'))
     runs-on: macos-26
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Show Xcode version
         run: xcodebuild -version
