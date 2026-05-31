@@ -69,7 +69,6 @@ struct CleanerHomeView: View {
                         }
                     )
                 }
-                .padding(.top)
             } else {
                 VStack(alignment: .center, spacing: 10) {
                     Text("Access to the Home folder is required")

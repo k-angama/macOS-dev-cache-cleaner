@@ -199,7 +199,6 @@ final class MenuBarPanelController: NSObject {
 
         let contentView = container.cleanerHomeDI.start()
             .frame(width: Layout.homePanelWidth)
-            .padding()
             .background(.regularMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 
