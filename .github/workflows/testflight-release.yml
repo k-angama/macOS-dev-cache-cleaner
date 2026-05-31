@@ -1,13 +1,19 @@
 name: Upload TestFlight Release
 
 on:
-  push:
+  pull_request:
     branches:
-      - "release/**"
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
   workflow_dispatch:
 
 jobs:
   upload-testflight:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'release/')
     runs-on: macos-26
 
     steps:
