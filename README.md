@@ -29,7 +29,7 @@
   <img src="./Ressources/DevCacheCleaner-screenshot.jpg" alt="DevCacheCleaner Screenshot"  >
 </p>
 
-If you want to reclaim storage used by Xcode, Gradle, CocoaPods, npm, browsers, project dependencies, and other development tools without manually digging through `~/Library`, hidden folders, and workspace build outputs, this project is built for that workflow.
+If you want to reclaim storage used by Xcode, Gradle, CocoaPods, npm, Yarn, Bun, browsers, design apps, project dependencies, and other development tools without manually digging through `~/Library`, hidden folders, and workspace build outputs, this project is built for that workflow.
 
 DevCacheCleaner keeps the scope intentionally focused:
 
@@ -135,11 +135,12 @@ displayed, and cleaned as a single category in the app.
 | --- | --- | --- |
 | IDE Caches | VS Code cache data and workspace storage | `~/Library/Application Support/Code/Cache`, `~/Library/Application Support/Code/CachedData`, `~/Library/Application Support/Code/User/workspaceStorage` |
 | CocoaPods Caches | CocoaPods specs repos and cache folders | `~/.cocoapods/repos`, `~/Library/Caches/CocoaPods` |
-| npm and Yarn Caches | Node package manager caches | `~/.npm-cache-user/_cacache`, `~/Library/Caches/Yarn` |
+| npm, Yarn, and Bun Caches | Node package manager caches | `~/.npm-cache-user/_cacache`, `~/Library/Caches/Yarn`, `~/.bun/install/cache` |
 | Android and Gradle Caches | Gradle caches, daemon data, Android Studio cache roots | `~/.gradle/caches`, `~/.gradle/daemon`, `~/Library/Caches/Google`, `~/Library/Caches/JetBrains` |
 | Xcode Caches and DerivedData | DerivedData, Archives, simulator data, Xcode caches | `~/Library/Developer/Xcode/DerivedData`, `~/Library/Developer/Xcode/Archives`, `~/Library/Developer/CoreSimulator/Devices` |
 | Browser Caches | Chrome, Brave, Firefox, Safari, Edge, and Opera caches | `~/Library/Caches/Google/Chrome`, `~/Library/Caches/BraveSoftware/Brave-Browser`, `~/Library/Caches/com.apple.Safari` |
 | Flutter and pub-cache | Flutter and Dart package cache data | `~/.pub-cache` |
+| Design App Caches | Figma, Adobe, and Apple Motion cache data | `~/Library/Application Support/Figma`, `~/Library/Application Support/Adobe/Common`, `~/Library/Containers/Motion/Data/Library/Caches/com.apple.motionapp/Retiming Cache Files` |
 
 Some built-in categories use prefix-based matching. For example, the
 Android/Gradle category only targets `AndroidStudio*` directories inside

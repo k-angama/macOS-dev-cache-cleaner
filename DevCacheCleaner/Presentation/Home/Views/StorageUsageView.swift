@@ -193,9 +193,13 @@ struct StorageUsageView: View {
                                 .transition(rowActionTransition)
                             }
                         }
-                        .frame(minWidth: 120, alignment: .trailing)
+                        .frame(
+                            minWidth: Constants.Layout.HomePanel.StorageUsage.categoryActionWidth,
+                            alignment: .trailing
+                        )
                         .animation(.easeInOut(duration: 0.2), value: state)
                     }
+                    .frame(height: Constants.Layout.HomePanel.StorageUsage.categoryRowHeight)
                 }
                 
                 Divider()
@@ -239,6 +243,7 @@ struct StorageUsageView: View {
                 .help("Clean all caches")
                 .disabled(isCleaning || totalCategoriesSize <= 0.01)
             }
+            .frame(height: Constants.Layout.HomePanel.StorageUsage.cleanAllRowHeight)
         }
     }
 }

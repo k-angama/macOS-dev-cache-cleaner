@@ -52,6 +52,7 @@ struct WorkspaceSelectionView: View {
                 .disabled(isSelectionEnabled == false)
             }
         }
+        .frame(height: Constants.Layout.HomePanel.StorageUsage.workspaceRowHeight)
     }
 
     private var workspaceStateView: some View {
@@ -80,7 +81,10 @@ struct WorkspaceSelectionView: View {
                 }
             }
         }
-        .frame(minWidth: 82, alignment: .trailing)
+        .frame(
+            minWidth: Constants.Layout.HomePanel.StorageUsage.workspaceStateWidth,
+            alignment: .trailing
+        )
     }
 
     private var workspaceInfoButton: some View {

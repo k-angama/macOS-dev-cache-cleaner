@@ -76,7 +76,7 @@ fileprivate struct FloatingPanelModifier<Item: Equatable, PanelContent: View>: V
             return
         }
 
-        let gap: CGFloat = 12
+        let gap = Constants.Layout.DetailPanel.gap
         let anchorFrame = hostWindow.frame
         let visibleFrame = hostWindow.screen?.visibleFrame
             ?? panel.screen?.visibleFrame
