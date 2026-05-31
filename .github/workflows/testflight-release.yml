@@ -10,18 +10,19 @@ jobs:
   upload-testflight:
     runs-on: macos-26
 
-    env:
-      APP_STORE_CONNECT_API_KEY_PATH: ${{ runner.temp }}/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8
-      ARCHIVE_PATH: ${{ runner.temp }}/DevCacheCleaner.xcarchive
-      EXPORT_PATH: ${{ runner.temp }}/testflight-export
-      KEYCHAIN_PATH: ${{ runner.temp }}/app-signing.keychain-db
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Show Xcode version
         run: xcodebuild -version
+
+      - name: Prepare CI paths
+        run: |
+          echo "APP_STORE_CONNECT_API_KEY_PATH=$RUNNER_TEMP/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8" >> "$GITHUB_ENV"
+          echo "ARCHIVE_PATH=$RUNNER_TEMP/DevCacheCleaner.xcarchive" >> "$GITHUB_ENV"
+          echo "EXPORT_PATH=$RUNNER_TEMP/testflight-export" >> "$GITHUB_ENV"
+          echo "KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db" >> "$GITHUB_ENV"
 
       - name: Install App Store Connect API key
         run: |
