@@ -112,7 +112,7 @@ final class MenuBarPanelController: NSObject {
 
     @objc private func toggleHomePanel() {
         if homePanel?.isVisible == true {
-            hideHomePanel()
+            hideMenuWorkflow()
             return
         }
 
@@ -130,8 +130,16 @@ final class MenuBarPanelController: NSObject {
         panel.makeKey()
     }
 
-    private func hideHomePanel() {
+    private func hideMenuWorkflow() {
         homePanel?.orderOut(nil)
+
+        for window in NSApp.windows {
+            guard window !== homePanel, window is NSPanel else {
+                continue
+            }
+
+            window.close()
+        }
     }
 
     private func startObservingAppFocusChanges() {
@@ -147,7 +155,7 @@ final class MenuBarPanelController: NSObject {
     }
 
     @objc private func applicationDidResignActive() {
-        hideHomePanel()
+        hideMenuWorkflow()
     }
 
     private func startObservingMouseDownEvents() {
@@ -165,7 +173,7 @@ final class MenuBarPanelController: NSObject {
         // this path intentionally has no detail-panel exception.
         globalMouseDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: eventMask) { [weak self] _ in
             Task { @MainActor in
-                self?.hideHomePanel()
+                self?.hideMenuWorkflow()
             }
         }
     }
@@ -189,7 +197,7 @@ final class MenuBarPanelController: NSObject {
         }
 
         // Any other in-app window click is outside the menu workflow.
-        hideHomePanel()
+        hideMenuWorkflow()
     }
 
     private func makeHomePanelIfNeeded() -> NSPanel {
@@ -230,18 +238,12 @@ final class MenuBarPanelController: NSObject {
         panel.level = .floating
         panel.collectionBehavior.insert(.fullScreenAuxiliary)
 
-        // The real visual background and rounded shape come from SwiftUI. The
-        // AppKit panel itself stays transparent so there is no titlebar or
-        // window chrome visible around the custom content.
-        panel.titleVisibility = .hidden
-        panel.titlebarAppearsTransparent = true
+        // The real visual background and rounded shape come from SwiftUI.
+        // The AppKit panel stays transparent and borderless.
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.isMovable = false
         panel.isReleasedWhenClosed = false
-        panel.standardWindowButton(.closeButton)?.isHidden = true
-        panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
-        panel.standardWindowButton(.zoomButton)?.isHidden = true
         panel.animationBehavior = .utilityWindow
         panel.setContentSize(hostingController.view.fittingSize)
 
