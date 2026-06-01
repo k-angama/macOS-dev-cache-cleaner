@@ -8,8 +8,17 @@
     <false/>
     <key>method</key>
     <string>app-store-connect</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.kangama.DevCacheCleaner</key>
+        <string>PROVISIONING_PROFILE_UUID</string>
+    </dict>
+    <key>installerSigningCertificate</key>
+    <string>3rd Party Mac Developer Installer</string>
+    <key>signingCertificate</key>
+    <string>3rd Party Mac Developer Application</string>
     <key>signingStyle</key>
-    <string>automatic</string>
+    <string>manual</string>
     <key>teamID</key>
     <string>FEV8Q8DHKC</string>
     <key>uploadSymbols</key>

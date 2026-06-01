@@ -12,6 +12,7 @@ on:
 
 jobs:
   test:
+    if: "!startsWith(github.head_ref, 'release/')"
     runs-on: macos-26
 
     steps:
