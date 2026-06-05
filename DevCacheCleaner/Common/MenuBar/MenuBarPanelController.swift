@@ -74,6 +74,7 @@ class MenuBarPanelController: NSObject {
         configureStatusItem()
         startObservingAppFocusChanges()
         startObservingMouseDownEvents()
+        showHomePanelOnLaunch()
     }
 
     deinit {
@@ -97,6 +98,12 @@ class MenuBarPanelController: NSObject {
         button.image?.isTemplate = true
         button.target = self
         button.action = #selector(toggleHomePanel)
+    }
+
+    private func showHomePanelOnLaunch() {
+        DispatchQueue.main.async { [weak self] in
+            self?.showHomePanel()
+        }
     }
 
     @objc private func toggleHomePanel() {
