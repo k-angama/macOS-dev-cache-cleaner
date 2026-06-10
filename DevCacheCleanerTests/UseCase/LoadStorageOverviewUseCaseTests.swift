@@ -54,7 +54,7 @@ struct LoadStorageOverviewUseCaseTests {
 
         let updatedCategoryNames = categoryUpdatedNames(from: events)
         let flutterIndex = updatedCategoryNames.firstIndex(of: "Flutter/pub-cache")
-        let ideIndex = updatedCategoryNames.firstIndex(of: "IDE (JetBrains, VSCode) Caches")
+        let ideIndex = updatedCategoryNames.firstIndex(of: "IDE & Development Tool Caches")
 
         #expect(flutterIndex != nil)
         #expect(ideIndex != nil)
