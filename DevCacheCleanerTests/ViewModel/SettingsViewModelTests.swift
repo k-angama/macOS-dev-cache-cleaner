@@ -15,6 +15,19 @@ struct SettingsViewModelTests {
         )
     }
 
+    @Test func setup_whenWorkspaceBookmarkExists_restoresWorkspacePath() {
+        let workspaceURL = URL(filePath: "/Users/test/Projects")
+        let context = makeSUT(
+            startupStatus: .disabled,
+            resolvedWorkspaceURL: workspaceURL
+        )
+
+        #expect(context.viewModel.workspaceDirectoryURL == workspaceURL)
+        #expect(context.viewModel.workspacePath == workspaceURL.path)
+        #expect(context.settingsStore.selectedWorkspaceURL == workspaceURL)
+        #expect(context.workspaceRepository.resolveCallCount == 1)
+    }
+
     @Test func setLaunchAtStartupEnabled_whenApprovalIsRequired_showsAlert() {
         let context = makeSUT(startupStatus: .disabled)
         context.startupRepository.nextResolvedStatusAfterUpdate = .requiresApproval
@@ -47,16 +60,21 @@ struct SettingsViewModelTests {
     }
 
     private func makeSUT(
-        startupStatus: LaunchAtStartupStatusEntity
+        startupStatus: LaunchAtStartupStatusEntity,
+        resolvedWorkspaceURL: URL? = nil
     ) -> SettingsViewModelTestContext {
         let workspaceRepository = WorkspaceAccessRepositoryMock()
         let startupRepository = LaunchAtStartupRepositoryMock()
         let settingsStore = SettingsStore()
 
+        workspaceRepository.resolvedURL = resolvedWorkspaceURL
         startupRepository.resolvedStatus = startupStatus
 
         let viewModel = SettingsViewModel(
             saveWorkspaceAccessUseCase: SaveWorkspaceAccessUseCase(
+                workspaceAccessRepository: workspaceRepository
+            ),
+            resolveWorkspaceAccessUseCase: ResolveWorkspaceAccessUseCase(
                 workspaceAccessRepository: workspaceRepository
             ),
             resolveLaunchAtStartupStatusUseCase: ResolveLaunchAtStartupStatusUseCase(
@@ -70,7 +88,9 @@ struct SettingsViewModelTests {
 
         return SettingsViewModelTestContext(
             viewModel: viewModel,
-            startupRepository: startupRepository
+            startupRepository: startupRepository,
+            workspaceRepository: workspaceRepository,
+            settingsStore: settingsStore
         )
     }
 }
@@ -78,6 +98,8 @@ struct SettingsViewModelTests {
 private struct SettingsViewModelTestContext {
     let viewModel: SettingsViewModel
     let startupRepository: LaunchAtStartupRepositoryMock
+    let workspaceRepository: WorkspaceAccessRepositoryMock
+    let settingsStore: SettingsStore
 }
 
 private enum TestStartupError: LocalizedError {

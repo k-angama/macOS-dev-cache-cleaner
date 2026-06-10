@@ -17,7 +17,7 @@ struct ParametersImpl: Parameters {
     
     struct Keys {
         static let homeFolderBookmark = "com.angama.home-folder-bookmark"
-        static let workspaceFolderBookmark = "com.angama.workspace-folder-bookmark"
+        static let workspaceFolderBookmark = "com.angama.workspace-folder-bookmark-test2"
         static let didDismissLaunchAtStartupPrompt = "com.angama.did-dismiss-launch-at-startup-prompt"
     }
     
