@@ -30,16 +30,26 @@ struct PathRowView: View {
                 .toggleStyle(.checkbox)
                 .disabled(subcategory.size <= 0.01)
             }
-
-            Image(systemName: "folder.fill")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.top, 3)
+            HStack {
+                Image(systemName: "folder.fill")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                if let name = subcategory.name {
+                    Text(name)
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                }
+            }
+            .padding(.top, 1)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(subcategory.path)
                     .font(.subheadline)
                     .textSelection(.enabled)
+                    .foregroundStyle(
+                        ((subcategory.name?.isEmpty) == nil) ? .primary : .secondary
+                    )
 
                 if case .childNamePrefix = subcategory.rule {
                     Text(subcategory.rule.displayDescription)
@@ -63,6 +73,7 @@ struct PathRowView: View {
 #Preview {
     PathRowView(
         subcategory: StorageSubCategoryEntity(
+            name: "VS Code",
             path: "Library/Application Support/Code/User/workspaceStorage",
             rule: .allContents,
             size: 1_731_485_440

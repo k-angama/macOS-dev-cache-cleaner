@@ -54,13 +54,29 @@ struct StorageCategoryEntity: Identifiable, Codable, Hashable {
 
 struct StorageSubCategoryEntity: Identifiable, Codable, Hashable  {
     var id: UUID = UUID()
+    let name: String?
     let path: String
     let rule: StoragePathRule
     var size: CGFloat
+
+    init(
+        id: UUID = UUID(),
+        name: String? = nil,
+        path: String,
+        rule: StoragePathRule,
+        size: CGFloat
+    ) {
+        self.id = id
+        self.name = name
+        self.path = path
+        self.rule = rule
+        self.size = size
+    }
     
     func updateSize(size: CGFloat) -> StorageSubCategoryEntity {
         StorageSubCategoryEntity(
             id: self.id,
+            name: self.name,
             path: self.path,
             rule: self.rule,
             size: size
