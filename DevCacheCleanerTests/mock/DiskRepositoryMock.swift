@@ -27,6 +27,10 @@ final class DiskRepositoryMock: DiskRepository {
         cleanErrors[key(path: path, rule: rule)] = error
     }
 
+    func removeCleanError(for path: String, rule: StoragePathRule = .allContents) {
+        cleanErrors.removeValue(forKey: key(path: path, rule: rule))
+    }
+
     func key(path: String, rule: StoragePathRule = .allContents) -> String {
         "\(path)|\(rule)"
     }

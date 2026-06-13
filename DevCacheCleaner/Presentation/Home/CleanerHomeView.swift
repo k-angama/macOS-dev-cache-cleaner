@@ -140,10 +140,23 @@ struct CleanerHomeView: View {
         .onChange(of: viewModel.isAlertErrorRequest, { _, newValue in
             if newValue {
                 Task { @MainActor in
-                    AlertPresenter.showError(
-                        title: "Error", message: viewModel.alertErrorMessage
-                    )
-                    viewModel.isAlertErrorRequest = false
+                    if viewModel.isRetryFailedCleanupAvailable {
+                        let shouldRetry = AlertPresenter.showRetryError(
+                            title: "Cleanup Incomplete",
+                            message: viewModel.alertErrorMessage
+                        )
+                        if shouldRetry {
+                            viewModel.retryFailedCleanup()
+                        } else {
+                            viewModel.dismissErrorAlert()
+                        }
+                    } else {
+                        AlertPresenter.showError(
+                            title: "Error",
+                            message: viewModel.alertErrorMessage
+                        )
+                        viewModel.dismissErrorAlert()
+                    }
                 }
             }
         })
@@ -262,4 +275,3 @@ struct CleanerHomeView: View {
     }
 })
  
-
