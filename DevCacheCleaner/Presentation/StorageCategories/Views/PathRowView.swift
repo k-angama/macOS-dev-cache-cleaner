@@ -97,10 +97,6 @@ struct PathRowView: View {
                 }
             )
 
-            if isNested {
-                Color.clear.frame(width: 14, height: 1)
-            }
-
             Image(systemName: "folder")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -135,6 +131,7 @@ struct PathRowView: View {
                 .accessibilityValue(location.size.byteCountString)
         }
         .padding(.vertical, isNested ? 4 : 0)
+        .padding(.leading, isNested ? 26 : 0)
     }
 
     private func selectionButton(
