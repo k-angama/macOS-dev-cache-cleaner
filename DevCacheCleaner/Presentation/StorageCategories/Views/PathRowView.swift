@@ -143,7 +143,7 @@ struct PathRowView: View {
     ) -> some View {
         Button(action: action) {
             Image(systemName: selectionSymbol(for: state))
-                .foregroundStyle(isEnabled ? Color.accentColor : .secondary)
+                .foregroundStyle(isEnabled ? Color.primary : .secondary)
         }
         .buttonStyle(.plain)
         .disabled(isEnabled == false)
