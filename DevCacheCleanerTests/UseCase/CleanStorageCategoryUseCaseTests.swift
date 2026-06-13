@@ -71,6 +71,12 @@ struct CleanStorageCategoryUseCaseTests {
             )
         )
         let lastEvent = try #require(events.last)
+        let deletingPaths = events
+            .filter { $0.phase == .deletingDirectory }
+            .compactMap(\.currentDirectory?.path)
+        let progressPaths = events
+            .filter { $0.phase == .progressUpdated }
+            .compactMap(\.currentDirectory?.path)
 
         #expect(repository.cleanedPaths == [
             repository.key(path: "Cache/A"),
@@ -81,6 +87,9 @@ struct CleanStorageCategoryUseCaseTests {
         #expect(lastEvent.updatedCategory?.categories[0].locations.map(\.size) == [0, 0])
         #expect(lastEvent.deletedSize == 3)
         #expect(lastEvent.didCompleteFully)
+        #expect(deletingPaths == ["Cache/A", "Cache/B"])
+        #expect(progressPaths.contains("Cache/A"))
+        #expect(progressPaths.last == "Cache/B")
     }
 
     @Test func reportsOnlyFailedLocationFromGroupedSubcategory() async throws {

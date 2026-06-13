@@ -48,28 +48,32 @@ struct CleanStorageCategoryUseCase {
 
                     let subCategory = updatedCategory.categories[index]
 
-                    continuation.yield(
-                        makeEvent(
-                            phase: .deletingDirectory,
-                            categoryName: category.name,
-                            currentDirectory: subCategory,
-                            updatedCategory: updatedCategory,
-                            deletedSize: deletedSize,
-                            totalSize: totalSize,
-                            failedDirectories: failedDirectories,
-                            totalDiskCapacity: nil,
-                            availableDiskCapacity: nil
-                        )
-                    )
-
                     var deletedSizeForCurrentSubcategory: CGFloat = 0
                     var failedLocations: [StorageLocationEntity] = []
+                    var lastProcessedLocationID: UUID?
 
                     for location in subCategory.locations {
                         guard Task.isCancelled == false else {
                             continuation.finish()
                             return
                         }
+
+                        let currentLocation = subCategory.updateLocations([location])
+                        lastProcessedLocationID = location.id
+
+                        continuation.yield(
+                            makeEvent(
+                                phase: .deletingDirectory,
+                                categoryName: category.name,
+                                currentDirectory: currentLocation,
+                                updatedCategory: updatedCategory,
+                                deletedSize: deletedSize,
+                                totalSize: totalSize,
+                                failedDirectories: failedDirectories,
+                                totalDiskCapacity: nil,
+                                availableDiskCapacity: nil
+                            )
+                        )
 
                         do {
                             try await diskRepository.cleanPath(
@@ -83,7 +87,7 @@ struct CleanStorageCategoryUseCase {
                                         makeEvent(
                                             phase: .progressUpdated,
                                             categoryName: category.name,
-                                            currentDirectory: subCategory,
+                                            currentDirectory: currentLocation,
                                             updatedCategory: updatedCategory,
                                             deletedSize: min(
                                                 totalSize,
@@ -118,12 +122,17 @@ struct CleanStorageCategoryUseCase {
                         .updateCategory(index: index, subCategory: refreshedSubCategory)
                         .updateSize()
                     deletedSize = min(totalSize, max(totalSize - updatedCategory.size, 0))
+                    let lastProcessedLocation = refreshedSubCategory.locations.first {
+                        $0.id == lastProcessedLocationID
+                    }
 
                     continuation.yield(
                         makeEvent(
                             phase: .progressUpdated,
                             categoryName: category.name,
-                            currentDirectory: refreshedSubCategory,
+                            currentDirectory: lastProcessedLocation.map {
+                                refreshedSubCategory.updateLocations([$0])
+                            },
                             updatedCategory: updatedCategory,
                             deletedSize: deletedSize,
                             totalSize: totalSize,
