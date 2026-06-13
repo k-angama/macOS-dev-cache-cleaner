@@ -140,6 +140,10 @@ struct StorageCategoryDetailsView: View {
                         }
                         .disabled(viewModel.isDeleteSelectedDisabled)
                         .foregroundStyle(.red)
+                        .help("Delete selected paths")
+                        .accessibilityHint(
+                            "Deletes \(viewModel.selectionSummary.lowercased())."
+                        )
                     }
                 }
             }

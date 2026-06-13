@@ -41,6 +41,8 @@ struct PathRowView: View {
             selectionButton(
                 state: selectionState,
                 isEnabled: subcategory.locations.contains(where: isLocationSelectable),
+                label: groupSelectionLabel,
+                hint: "Selects or clears every non-empty path for this tool.",
                 action: { onToggleSelection?() }
             )
 
@@ -51,6 +53,11 @@ struct PathRowView: View {
                     .frame(width: 14)
             }
             .buttonStyle(.plain)
+            .help(isExpanded ? "Collapse paths" : "Expand paths")
+            .accessibilityLabel(
+                "\(isExpanded ? "Collapse" : "Expand") \(subcategory.name ?? "grouped paths")"
+            )
+            .accessibilityHint("Shows or hides the individual cache paths.")
 
             Image(systemName: "folder.fill")
                 .font(.caption)
@@ -65,6 +72,8 @@ struct PathRowView: View {
             Text(subcategory.size.byteCountString)
                 .font(.footnote)
                 .fontWeight(.semibold)
+                .accessibilityLabel("Total size")
+                .accessibilityValue(subcategory.size.byteCountString)
         }
     }
 
@@ -76,6 +85,10 @@ struct PathRowView: View {
             selectionButton(
                 state: isLocationSelected(location) ? .all : .none,
                 isEnabled: isLocationSelectable(location),
+                label: locationSelectionLabel(location),
+                hint: isLocationSelectable(location)
+                    ? "Includes or excludes this path from selective cleanup."
+                    : "This path is empty and cannot be selected.",
                 action: {
                     onLocationSelectionChange?(
                         location.id,
@@ -103,6 +116,8 @@ struct PathRowView: View {
                 Text(location.path)
                     .font(.subheadline)
                     .textSelection(.enabled)
+                    .accessibilityLabel("Cache path")
+                    .accessibilityValue(location.path)
 
                 if case .childNamePrefix = location.rule {
                     Text(location.rule.displayDescription)
@@ -116,6 +131,8 @@ struct PathRowView: View {
             Text(location.size.byteCountString)
                 .font(.footnote)
                 .fontWeight(.semibold)
+                .accessibilityLabel("Path size")
+                .accessibilityValue(location.size.byteCountString)
         }
         .padding(.vertical, isNested ? 4 : 0)
     }
@@ -123,6 +140,8 @@ struct PathRowView: View {
     private func selectionButton(
         state: StorageCategoryDetailsViewModel.SelectionState,
         isEnabled: Bool,
+        label: String,
+        hint: String,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -131,6 +150,10 @@ struct PathRowView: View {
         }
         .buttonStyle(.plain)
         .disabled(isEnabled == false)
+        .help(label)
+        .accessibilityLabel(label)
+        .accessibilityValue(selectionDescription(for: state))
+        .accessibilityHint(hint)
     }
 
     private func selectionSymbol(
@@ -143,6 +166,30 @@ struct PathRowView: View {
             return "minus.square.fill"
         case .all:
             return "checkmark.square.fill"
+        }
+    }
+
+    private var groupSelectionLabel: String {
+        let name = subcategory.name ?? "grouped paths"
+        return selectionState == .all
+            ? "Clear all \(name) paths"
+            : "Select all \(name) paths"
+    }
+
+    private func locationSelectionLabel(_ location: StorageLocationEntity) -> String {
+        isLocationSelected(location)
+            ? "Deselect \(location.path)"
+            : "Select \(location.path)"
+    }
+
+    private func selectionDescription(for state: StorageCategoryDetailsViewModel.SelectionState) -> String {
+        switch state {
+        case .none:
+            return "Not selected"
+        case .partial:
+            return "Partially selected"
+        case .all:
+            return "Selected"
         }
     }
 }
