@@ -35,14 +35,20 @@ struct Constants {
     struct Storages {
         static let items: [StorageItem] = [
             StorageItem(
-                title: "IDE & Development Tool Caches",
+                title: "IDE Caches (VS Code, Cursor, Android Studio...)",
                 color: .green,
                 paths: [
                     StoragePath("Library/Application Support/Code/Cache", name: "VS Code"),
                     StoragePath("Library/Application Support/Code/CachedData", name: "VS Code"),
                     StoragePath("Library/Caches/com.microsoft.VSCode", name: "VS Code"),
                     StoragePath("Library/Caches/com.microsoft.VSCode.ShipIt", name: "VS Code"),
-                    StoragePath("Library/Caches/electron", name: "Electron"),
+                    StoragePath("Library/Application Support/Cursor/Cache", name: "Cursor"),
+                    StoragePath("Library/Application Support/Cursor/CachedData", name: "Cursor"),
+                    StoragePath("Library/Application Support/Cursor/CachedExtensionVSIXs", name: "Cursor"),
+                    StoragePath("Library/Application Support/Cursor/Code Cache", name: "Cursor"),
+                    StoragePath("Library/Application Support/Cursor/GPUCache", name: "Cursor"),
+                    StoragePath("Library/Caches/com.todesktop.230313mzl4w4u92", name: "Cursor"),
+                    StoragePath("Library/Caches/com.todesktop.230313mzl4w4u92.ShipIt", name: "Cursor"),
                     StoragePath("Library/Caches/com.unity3d.unityhub", name: "Unity Hub"),
                     StoragePath("Library/Caches/com.unity3d.unityhub.ShipIt", name: "Unity Hub"),
                     StoragePath("Library/Caches/Google", name: "Android", rule: .childNamePrefix("AndroidStudio")),
@@ -50,7 +56,7 @@ struct Constants {
                 ]
             ),
             StorageItem(
-                title: "Package Manager Caches",
+                title: "Package Manager Caches (npm, Homebrew, CocoaPods...)",
                 color: .orange,
                 paths: [
                     StoragePath("Library/Caches/Yarn", name: "Yarn"),
@@ -60,17 +66,33 @@ struct Constants {
                     StoragePath(".bun/install/cache", name: "bun"),
                     StoragePath("Library/Caches/CocoaPods", name: "CocoaPods"),
                     StoragePath("Library/Caches/Homebrew", name: "Homebrew"),
-                    StoragePath("Library/Caches/pip", name: "pip"),
                     StoragePath("Library/Caches/composer", name: "Composer"),
                     StoragePath("Library/Caches/org.swift.swiftpm", name: "SwiftPM"),
                 ]
             ),
             StorageItem(
-                title: "Gradle Caches",
+                title: "Language Caches (Python, Rust, Go, Flutter...)",
+                color: .pink,
+                paths: [
+                    StoragePath("Library/Caches/pip", name: "Python / pip"),
+                    StoragePath("Library/Caches/uv", name: "Python / uv"),
+                    StoragePath("Library/Caches/pypoetry", name: "Python / Poetry"),
+                    StoragePath(".cargo/registry/cache", name: "Rust / Cargo"),
+                    StoragePath(".cargo/registry/src", name: "Rust / Cargo"),
+                    StoragePath(".cargo/git/checkouts", name: "Rust / Cargo"),
+                    StoragePath(".cargo/git/db", name: "Rust / Cargo"),
+                    StoragePath("Library/Caches/go-build", name: "Go build cache"),
+                    StoragePath("go/pkg/mod", name: "Go module cache"),
+                    StoragePath(".pub-cache", name: "Flutter / Dart"),
+                ]
+            ),
+            StorageItem(
+                title: "JVM Build Caches (Gradle, Maven...)",
                 color: .red,
                 paths: [
-                    StoragePath(".gradle/caches"),
-                    StoragePath(".gradle/daemon"),
+                    StoragePath(".gradle/caches", name: "Gradle"),
+                    StoragePath(".gradle/daemon", name: "Gradle"),
+                    StoragePath(".m2/repository", name: "Maven"),
                 ]
             ),
             StorageItem(
@@ -90,7 +112,7 @@ struct Constants {
                 ]
             ),
             StorageItem(
-                title: "Browser Caches",
+                title: "Browser Caches (Chrome, Safari, Firefox...)",
                 color: .brown,
                 paths: [
                     StoragePath("Library/Caches/Google/Chrome", name: "Chrome"),
@@ -104,14 +126,7 @@ struct Constants {
                 ]
             ),
             StorageItem(
-                title: "Flutter/pub-cache",
-                color: .pink,
-                paths: [
-                    StoragePath(".pub-cache"),
-                ]
-            ),
-            StorageItem(
-                title: "Design App Caches",
+                title: "Design App Caches (Figma, Adobe, Motion...)",
                 color: .purple,
                 paths: [
                     StoragePath("Library/Caches", name: "Figma", rule: .childNamePrefix("com.figma.")),

@@ -133,17 +133,16 @@ displayed, and cleaned as a single category in the app.
 
 | Category | Typical Targets | Example Paths |
 | --- | --- | --- |
-| IDE Caches | VS Code cache data and workspace storage | `~/Library/Application Support/Code/Cache`, `~/Library/Application Support/Code/CachedData`, `~/Library/Application Support/Code/User/workspaceStorage` |
-| CocoaPods Caches | CocoaPods specs repos and cache folders | `~/.cocoapods/repos`, `~/Library/Caches/CocoaPods` |
-| npm, Yarn, and Bun Caches | Node package manager caches | `~/.npm-cache-user/_cacache`, `~/Library/Caches/Yarn`, `~/.bun/install/cache` |
-| Android and Gradle Caches | Gradle caches, daemon data, Android Studio cache roots | `~/.gradle/caches`, `~/.gradle/daemon`, `~/Library/Caches/Google`, `~/Library/Caches/JetBrains` |
+| IDE Caches (VS Code, Cursor, Android Studio...) | VS Code, Cursor, Android Studio, and Unity Hub cache data | `~/Library/Application Support/Code/Cache`, `~/Library/Application Support/Cursor/Cache`, `~/Library/Caches/Google` |
+| Package Manager Caches (npm, Homebrew, CocoaPods...) | npm, Yarn, pnpm, Bun, CocoaPods, Homebrew, Composer, and SwiftPM caches | `~/.npm/_cacache`, `~/Library/Caches/Yarn`, `~/.bun/install/cache` |
+| Language Caches (Python, Rust, Go, Flutter...) | Python, Rust, Go, Flutter, and Dart dependency or build caches | `~/Library/Caches/pip`, `~/.cargo/registry/cache`, `~/Library/Caches/go-build`, `~/.pub-cache` |
+| JVM Build Caches (Gradle, Maven...) | Gradle cache and daemon data, plus the Maven local repository | `~/.gradle/caches`, `~/.gradle/daemon`, `~/.m2/repository` |
 | Xcode Caches and DerivedData | DerivedData, Archives, simulator data, Xcode caches | `~/Library/Developer/Xcode/DerivedData`, `~/Library/Developer/Xcode/Archives`, `~/Library/Developer/CoreSimulator/Devices` |
-| Browser Caches | Chrome, Brave, Firefox, Safari, Edge, and Opera caches | `~/Library/Caches/Google/Chrome`, `~/Library/Caches/BraveSoftware/Brave-Browser`, `~/Library/Caches/com.apple.Safari` |
-| Flutter and pub-cache | Flutter and Dart package cache data | `~/.pub-cache` |
-| Design App Caches | Figma, Adobe, and Apple Motion cache data | `~/Library/Application Support/Figma`, `~/Library/Application Support/Adobe/Common`, `~/Library/Containers/Motion/Data/Library/Caches/com.apple.motionapp/Retiming Cache Files` |
+| Browser Caches (Chrome, Safari, Firefox...) | Chrome, Brave, Firefox, Safari, Edge, and Opera caches | `~/Library/Caches/Google/Chrome`, `~/Library/Caches/BraveSoftware/Brave-Browser`, `~/Library/Caches/com.apple.Safari` |
+| Design App Caches (Figma, Adobe, Motion...) | Figma, Adobe, and Apple Motion cache data | `~/Library/Application Support/Figma`, `~/Library/Application Support/Adobe/Common`, `~/Library/Containers/Motion/Data/Library/Caches/com.apple.motionapp/Retiming Cache Files` |
 
 Some built-in categories use prefix-based matching. For example, the
-Android/Gradle category only targets `AndroidStudio*` directories inside
+IDE category only targets `AndroidStudio*` directories inside
 certain JetBrains and Google cache roots.
 
 ## Workspace Cleanup

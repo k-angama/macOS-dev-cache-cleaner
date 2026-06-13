@@ -41,7 +41,7 @@ struct LoadStorageOverviewUseCaseTests {
         repository.setComputeDelay(40_000_000, for: "Library/Caches/CocoaPods")
         repository.setComputeDelay(40_000_000, for: "Library/Application Support/Code/Cache")
         repository.setComputeDelay(40_000_000, for: "Library/Application Support/Code/CachedData")
-        repository.setComputeDelay(40_000_000, for: "Library/Application Support/Code/User/workspaceStorage")
+        repository.setComputeDelay(40_000_000, for: "Library/Application Support/Cursor/Cache")
         repository.setComputeResponses([3.5], for: ".pub-cache")
 
         let events = await collectLoadStorageOverviewEvents(
@@ -53,12 +53,16 @@ struct LoadStorageOverviewUseCaseTests {
         )
 
         let updatedCategoryNames = categoryUpdatedNames(from: events)
-        let flutterIndex = updatedCategoryNames.firstIndex(of: "Flutter/pub-cache")
-        let ideIndex = updatedCategoryNames.firstIndex(of: "IDE & Development Tool Caches")
+        let languageToolchainIndex = updatedCategoryNames.firstIndex(
+            of: "Language Caches (Python, Rust, Go, Flutter...)"
+        )
+        let ideIndex = updatedCategoryNames.firstIndex(
+            of: "IDE Caches (VS Code, Cursor, Android Studio...)"
+        )
 
-        #expect(flutterIndex != nil)
+        #expect(languageToolchainIndex != nil)
         #expect(ideIndex != nil)
-        #expect((flutterIndex ?? .max) < (ideIndex ?? .max))
+        #expect((languageToolchainIndex ?? .max) < (ideIndex ?? .max))
     }
 
     private func collectLoadStorageOverviewEvents(
