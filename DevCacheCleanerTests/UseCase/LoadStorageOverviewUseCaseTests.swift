@@ -23,7 +23,9 @@ struct LoadStorageOverviewUseCaseTests {
         let finishedEvent = events.last
         let categoryUpdatedEvents = events.filter { $0.phase == .categoryUpdated }
         let flutterCategory = finishedEvent?.categories.first {
-            $0.categories.contains(where: { $0.path == ".pub-cache" })
+            $0.categories.contains { subcategory in
+                subcategory.locations.contains { $0.path == ".pub-cache" }
+            }
         }
 
         #expect(startedEvent?.phase == .started)

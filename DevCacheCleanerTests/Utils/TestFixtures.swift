@@ -27,6 +27,17 @@ func makeSubCategory(
     StorageSubCategoryEntity(path: name, rule: rule, size: size)
 }
 
+func makeSubCategory(
+    name: String? = nil,
+    locations: [StorageLocationEntity]
+) -> StorageSubCategoryEntity {
+    StorageSubCategoryEntity(
+        name: name,
+        locations: locations,
+        size: locations.reduce(0) { $0 + $1.size }
+    )
+}
+
 func collectEvents(
     from stream: AsyncStream<CleanStorageCategoryEventEntity>
 ) async -> [CleanStorageCategoryEventEntity] {

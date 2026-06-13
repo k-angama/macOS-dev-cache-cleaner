@@ -67,6 +67,53 @@ struct CleanerHomeViewModelTests {
         ])
     }
 
+    @Test func startCleanup_forSelectedLocation_preservesUnselectedSibling() async {
+        let selectedLocation = StorageLocationEntity(
+            path: "Cache/Selected",
+            rule: .allContents,
+            size: 2
+        )
+        let unselectedLocation = StorageLocationEntity(
+            path: "Cache/Kept",
+            rule: .allContents,
+            size: 5
+        )
+        let grouped = makeSubCategory(
+            name: "VS Code",
+            locations: [selectedLocation, unselectedLocation]
+        )
+        let category = makeCategory(
+            name: "IDE Caches",
+            subcategories: [grouped]
+        )
+        let selectedSubcategory = grouped.updateLocations([selectedLocation])
+        let context = makeSUT(totalDiskCapacity: 500, availableDiskCapacity: 200)
+
+        context.homeAccessRepository.resolvedURL = testHomeURL
+        context.diskRepository.setComputeResponses([2, 0], for: selectedLocation.path)
+        context.viewModel.categories = [category]
+
+        context.viewModel.askRemoveSubcategories(
+            from: category,
+            subcategories: [selectedSubcategory]
+        )
+        _ = context.viewModel.startCleanup()
+
+        let didFinishCleanup = await waitUntil(timeout: 2) {
+            context.viewModel.isCleaning == false &&
+            context.viewModel.categories[0].size == 5
+        }
+
+        #expect(didFinishCleanup)
+        #expect(context.viewModel.categories[0].categories[0].locations == [
+            selectedLocation.updateSize(0),
+            unselectedLocation,
+        ])
+        #expect(context.diskRepository.cleanedPaths == [
+            context.diskRepository.key(path: selectedLocation.path)
+        ])
+    }
+
     @Test func startCleanup_withoutSelection_cleansAllNonEmptyCategories() async {
         let firstCategory = makeCategory(
             name: "First",

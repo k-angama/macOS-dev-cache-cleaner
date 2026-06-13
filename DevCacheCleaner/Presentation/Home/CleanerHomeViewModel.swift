@@ -847,7 +847,11 @@ class CleanerHomeViewModel {
 
     private func categoryIndex(containing path: String) -> Int? {
         categories.firstIndex { category in
-            category.categories.contains(where: { path.contains($0.path) })
+            category.categories.contains { subcategory in
+                subcategory.locations.contains { location in
+                    path.contains(location.path)
+                }
+            }
         }
     }
 
@@ -938,7 +942,17 @@ private extension StorageCategoryEntity {
             uniqueKeysWithValues: updatedSubcategories.map { ($0.id, $0) }
         )
         let mergedSubcategories = categories.map { subcategory in
-            updatedByID[subcategory.id] ?? subcategory
+            guard let updatedSubcategory = updatedByID[subcategory.id] else {
+                return subcategory
+            }
+
+            let updatedLocationsByID = Dictionary(
+                uniqueKeysWithValues: updatedSubcategory.locations.map { ($0.id, $0) }
+            )
+            let mergedLocations = subcategory.locations.map { location in
+                updatedLocationsByID[location.id] ?? location
+            }
+            return subcategory.updateLocations(mergedLocations)
         }
 
         return StorageCategoryEntity(

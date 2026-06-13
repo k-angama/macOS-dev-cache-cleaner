@@ -14,8 +14,13 @@ struct BuildStorageCategoriesUseCase {
             let subcategories = item.paths.map { storagePath in
                 StorageSubCategoryEntity(
                     name: storagePath.name.isEmpty ? nil : storagePath.name,
-                    path: storagePath.path,
-                    rule: storagePath.rule,
+                    locations: storagePath.locations.map { location in
+                        StorageLocationEntity(
+                            path: location.path,
+                            rule: location.rule,
+                            size: 0
+                        )
+                    },
                     size: 0
                 )
             }
