@@ -12,7 +12,10 @@ struct StorageCategoryDetailsView: View {
     @State var viewModel: StorageCategoryDetailsViewModel
 
     private var pathsListHeight: CGFloat {
-        min(CGFloat(viewModel.visibleRowCount) * 58, 500)
+        min(
+            CGFloat(viewModel.visibleRowCount) * Constants.Layout.DetailPanel.pathRowHeightEstimate,
+            Constants.Layout.DetailPanel.pathsListMaxHeight
+        )
     }
 
     var body: some View {

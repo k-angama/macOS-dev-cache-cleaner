@@ -25,6 +25,7 @@ struct PathRowView: View {
                 if isExpanded {
                     ForEach(subcategory.locations) { location in
                         locationRow(location, isNested: true)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
             } else if let location = subcategory.locations.first {
@@ -34,6 +35,10 @@ struct PathRowView: View {
         .padding(12)
         .background(Color.primary.opacity(0.035))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .animation(
+            .easeInOut(duration: Constants.Layout.DetailPanel.resizeAnimationDuration),
+            value: isExpanded
+        )
     }
 
     private var groupHeader: some View {
@@ -46,11 +51,15 @@ struct PathRowView: View {
                 action: { onToggleSelection?() }
             )
 
-            Button(action: { onToggleExpansion?() }) {
+            Button(action: toggleExpansion) {
                 Image(systemName: "chevron.right")
                     .font(.caption)
                     .rotationEffect(.degrees(isExpanded ? 90 : 0))
                     .frame(width: 14)
+                    .animation(
+                        .easeInOut(duration: Constants.Layout.DetailPanel.resizeAnimationDuration),
+                        value: isExpanded
+                    )
             }
             .buttonStyle(.plain)
             .help(isExpanded ? "Collapse paths" : "Expand paths")
@@ -151,6 +160,10 @@ struct PathRowView: View {
         .accessibilityLabel(label)
         .accessibilityValue(selectionDescription(for: state))
         .accessibilityHint(hint)
+    }
+
+    private func toggleExpansion() {
+        onToggleExpansion?()
     }
 
     private func selectionSymbol(

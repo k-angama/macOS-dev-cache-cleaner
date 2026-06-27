@@ -241,6 +241,9 @@ struct Constants {
         struct DetailPanel {
             static let panelWidth: CGFloat = 460
             static let gap: CGFloat = 12
+            static let pathRowHeightEstimate: CGFloat = 58
+            static let pathsListMaxHeight: CGFloat = 500
+            static let resizeAnimationDuration: TimeInterval = 0.18
         }
 
         struct HomePanel {
