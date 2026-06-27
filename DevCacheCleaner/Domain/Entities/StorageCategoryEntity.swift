@@ -54,15 +54,85 @@ struct StorageCategoryEntity: Identifiable, Codable, Hashable {
 
 struct StorageSubCategoryEntity: Identifiable, Codable, Hashable  {
     var id: UUID = UUID()
+    let name: String?
+    var locations: [StorageLocationEntity]
+    var size: CGFloat
+
+    var path: String {
+        locations.first?.path ?? ""
+    }
+
+    var rule: StoragePathRule {
+        locations.first?.rule ?? .allContents
+    }
+
+    init(
+        id: UUID = UUID(),
+        name: String? = nil,
+        locations: [StorageLocationEntity],
+        size: CGFloat
+    ) {
+        self.id = id
+        self.name = name
+        self.locations = locations
+        self.size = size
+    }
+
+    init(
+        id: UUID = UUID(),
+        name: String? = nil,
+        path: String,
+        rule: StoragePathRule,
+        size: CGFloat
+    ) {
+        self.init(
+            id: id,
+            name: name,
+            locations: [
+                StorageLocationEntity(path: path, rule: rule, size: size)
+            ],
+            size: size
+        )
+    }
+    
+    func updateSize(size: CGFloat) -> StorageSubCategoryEntity {
+        let updatedLocations: [StorageLocationEntity]
+
+        if locations.count == 1, let location = locations.first {
+            updatedLocations = [location.updateSize(size)]
+        } else {
+            updatedLocations = locations
+        }
+
+        return StorageSubCategoryEntity(
+            id: self.id,
+            name: self.name,
+            locations: updatedLocations,
+            size: size
+        )
+    }
+
+    func updateLocations(_ locations: [StorageLocationEntity]) -> StorageSubCategoryEntity {
+        StorageSubCategoryEntity(
+            id: id,
+            name: name,
+            locations: locations,
+            size: locations.reduce(0) { $0 + $1.size }
+        )
+    }
+}
+
+struct StorageLocationEntity: Identifiable, Codable, Hashable {
+    var id: UUID = UUID()
     let path: String
     let rule: StoragePathRule
     var size: CGFloat
-    
-    func updateSize(size: CGFloat) -> StorageSubCategoryEntity {
-        StorageSubCategoryEntity(
-            id: self.id,
-            path: self.path,
-            rule: self.rule,
+
+    func updateSize(_ size: CGFloat) -> StorageLocationEntity {
+        StorageLocationEntity(
+            id: id,
+            path: path,
+            rule: rule,
             size: size
         )
     }

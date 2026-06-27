@@ -34,4 +34,100 @@ struct CleanStorageCategoryUseCaseTests {
         #expect(repository.cleanedPaths == [repository.key(path: ".pub-cache")])
         #expect(repository.cleanedExpectedSizes == [2.5])
     }
+
+    @Test func cleansEveryLocationInGroupedSubcategory() async throws {
+        let repository = DiskRepositoryMock()
+        repository.setComputeResponses([1, 0], for: "Cache/A")
+        repository.setComputeResponses(
+            [2, 0],
+            for: "Cache/B",
+            rule: .childNamePrefix("match")
+        )
+        let category = makeCategory(
+            name: "Grouped",
+            subcategories: [
+                makeSubCategory(
+                    name: "Tool",
+                    locations: [
+                        StorageLocationEntity(
+                            path: "Cache/A",
+                            rule: .allContents,
+                            size: 0
+                        ),
+                        StorageLocationEntity(
+                            path: "Cache/B",
+                            rule: .childNamePrefix("match"),
+                            size: 0
+                        ),
+                    ]
+                )
+            ]
+        )
+
+        let events = await collectEvents(
+            from: CleanStorageCategoryUseCase(diskRepository: repository).execute(
+                homeURL: testHomeURL,
+                category: category
+            )
+        )
+        let lastEvent = try #require(events.last)
+        let deletingPaths = events
+            .filter { $0.phase == .deletingDirectory }
+            .compactMap(\.currentDirectory?.path)
+        let progressPaths = events
+            .filter { $0.phase == .progressUpdated }
+            .compactMap(\.currentDirectory?.path)
+
+        #expect(repository.cleanedPaths == [
+            repository.key(path: "Cache/A"),
+            repository.key(path: "Cache/B", rule: .childNamePrefix("match")),
+        ])
+        #expect(repository.cleanedExpectedSizes == [1, 2])
+        #expect(lastEvent.updatedCategory?.categories.count == 1)
+        #expect(lastEvent.updatedCategory?.categories[0].locations.map(\.size) == [0, 0])
+        #expect(lastEvent.deletedSize == 3)
+        #expect(lastEvent.didCompleteFully)
+        #expect(deletingPaths == ["Cache/A", "Cache/B"])
+        #expect(progressPaths.contains("Cache/A"))
+        #expect(progressPaths.last == "Cache/B")
+    }
+
+    @Test func reportsOnlyFailedLocationFromGroupedSubcategory() async throws {
+        struct ExpectedError: Error {}
+
+        let repository = DiskRepositoryMock()
+        repository.setComputeResponses([1, 1], for: "Cache/A")
+        repository.setComputeResponses([2, 0], for: "Cache/B")
+        repository.setCleanError(ExpectedError(), for: "Cache/A")
+        let first = StorageLocationEntity(
+            path: "Cache/A",
+            rule: .allContents,
+            size: 0
+        )
+        let second = StorageLocationEntity(
+            path: "Cache/B",
+            rule: .allContents,
+            size: 0
+        )
+        let category = makeCategory(
+            name: "Grouped",
+            subcategories: [
+                makeSubCategory(name: "Tool", locations: [first, second])
+            ]
+        )
+
+        let events = await collectEvents(
+            from: CleanStorageCategoryUseCase(diskRepository: repository).execute(
+                homeURL: testHomeURL,
+                category: category
+            )
+        )
+        let lastEvent = try #require(events.last)
+        let failure = try #require(lastEvent.failedDirectories.first)
+
+        #expect(lastEvent.failedDirectories.count == 1)
+        #expect(failure.locations.map(\.id) == [first.id])
+        #expect(failure.locations.map(\.path) == ["Cache/A"])
+        #expect(lastEvent.didCompleteFully == false)
+    }
 }

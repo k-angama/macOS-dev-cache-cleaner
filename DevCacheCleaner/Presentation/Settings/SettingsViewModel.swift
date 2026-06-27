@@ -18,25 +18,31 @@ class SettingsViewModel {
 
     private let settingsStore: SettingsStore
     private let saveWorkspaceAccessUseCase: SaveWorkspaceAccessUseCase
+    private let resolveWorkspaceAccessUseCase: ResolveWorkspaceAccessUseCase
     private let resolveLaunchAtStartupStatusUseCase: ResolveLaunchAtStartupStatusUseCase
     private let updateLaunchAtStartupStatusUseCase: UpdateLaunchAtStartupStatusUseCase
 
     init(
         saveWorkspaceAccessUseCase: SaveWorkspaceAccessUseCase,
+        resolveWorkspaceAccessUseCase: ResolveWorkspaceAccessUseCase,
         resolveLaunchAtStartupStatusUseCase: ResolveLaunchAtStartupStatusUseCase,
         updateLaunchAtStartupStatusUseCase: UpdateLaunchAtStartupStatusUseCase,
         settingsStore: SettingsStore
     ) {
         self.settingsStore = settingsStore
         self.saveWorkspaceAccessUseCase = saveWorkspaceAccessUseCase
+        self.resolveWorkspaceAccessUseCase = resolveWorkspaceAccessUseCase
         self.resolveLaunchAtStartupStatusUseCase = resolveLaunchAtStartupStatusUseCase
         self.updateLaunchAtStartupStatusUseCase = updateLaunchAtStartupStatusUseCase
         setup()
     }
     
     func setup() {
-        workspaceDirectoryURL = settingsStore.selectedWorkspaceURL
-        workspacePath = settingsStore.selectedWorkspaceURL?.path
+        let workspaceURL = settingsStore.selectedWorkspaceURL
+            ?? resolveWorkspaceAccessUseCase.execute()
+        workspaceDirectoryURL = workspaceURL
+        workspacePath = workspaceURL?.path
+        settingsStore.selectedWorkspaceURL = workspaceURL
         refreshLaunchAtStartupState()
     }
 

@@ -5,110 +5,134 @@ import Testing
 @MainActor
 struct StorageCategoryDetailsViewModelTests {
 
-    @Test func init_buildsDerivedStateFromCategory() {
-        let category = makeCategory(
-            name: "IDE Caches",
-            subcategories: [
-                makeSubCategory(name: "small", size: 512),
-                makeSubCategory(
-                    name: "prefix",
-                    rule: .childNamePrefix("AndroidStudio"),
-                    size: 2_048
-                ),
-                makeSubCategory(name: "empty", size: 0)
+    @Test func init_buildsPathDerivedStateFromGroupedCategory() {
+        let grouped = makeSubCategory(
+            name: "VS Code",
+            locations: [
+                makeLocation(path: "Cache/A", size: 512),
+                makeLocation(path: "Cache/B", size: 2_048),
+                makeLocation(path: "Cache/Empty", size: 0),
             ]
         )
+        let single = makeSubCategory(name: "Cache/C", size: 1_024)
 
-        let viewModel = StorageCategoryDetailsViewModel(category: category)
+        let viewModel = StorageCategoryDetailsViewModel(
+            category: makeCategory(
+                name: "IDE Caches",
+                subcategories: [single, grouped]
+            )
+        )
 
-        #expect(viewModel.pathCount == 3)
-        #expect(viewModel.pathCountText == "3 items")
-        #expect(viewModel.nonEmptyPathCount == 2)
-        #expect(viewModel.sortedSubcategories.map(\.path) == ["prefix", "small", "empty"])
+        #expect(viewModel.pathCount == 4)
+        #expect(viewModel.pathCountText == "4 items")
+        #expect(viewModel.nonEmptyPathCount == 3)
+        #expect(viewModel.sortedSubcategories.map(\.id) == [grouped.id, single.id])
         #expect(viewModel.largestPathSizeText == CGFloat(2_048).byteCountString)
-        #expect(viewModel.selectedSubcategoryIDs.isEmpty)
+        #expect(viewModel.selectedLocationIDs.isEmpty)
         #expect(viewModel.selectedSubcategories.isEmpty)
-        #expect(viewModel.selectedSize == 0)
+        #expect(viewModel.visibleRowCount == 2)
         #expect(viewModel.selectionSummary == "No path selected")
         #expect(viewModel.isDeleteSelectedDisabled)
     }
 
-    @Test func updateSelection_updatesSelectedStateAndSummary() {
-        let firstSubcategory = makeSubCategory(name: "first", size: 1_024)
-        let secondSubcategory = makeSubCategory(name: "second", size: 2_048)
+    @Test func locationSelection_buildsPartialSubcategoryPayload() throws {
+        let first = makeLocation(path: "Cache/A", size: 1_024)
+        let second = makeLocation(path: "Cache/B", size: 2_048)
+        let grouped = makeSubCategory(name: "Cursor", locations: [first, second])
         let viewModel = StorageCategoryDetailsViewModel(
             category: makeCategory(
-                name: "Xcode Caches",
-                subcategories: [firstSubcategory, secondSubcategory]
+                name: "IDE Caches",
+                subcategories: [grouped]
             )
         )
 
-        viewModel.updateSelection(subcategoryID: firstSubcategory.id, isSelected: true)
+        viewModel.updateSelection(locationID: first.id, isSelected: true)
 
-        #expect(viewModel.isSelected(firstSubcategory))
-        #expect(viewModel.isSelected(secondSubcategory) == false)
-        #expect(viewModel.selectedSubcategories == [firstSubcategory])
-        #expect(viewModel.selectedSize == 1_024)
+        let selectedSubcategory = try #require(viewModel.selectedSubcategories.first)
+        #expect(viewModel.isLocationSelected(first))
+        #expect(viewModel.isLocationSelected(second) == false)
+        #expect(viewModel.selectionState(for: grouped) == .partial)
+        #expect(selectedSubcategory.id == grouped.id)
+        #expect(selectedSubcategory.locations == [first])
+        #expect(selectedSubcategory.size == 1_024)
         #expect(viewModel.selectionSummary == "1 selected - \(CGFloat(1_024).byteCountString)")
         #expect(viewModel.isDeleteSelectedDisabled == false)
-
-        viewModel.updateSelection(subcategoryID: firstSubcategory.id, isSelected: false)
-
-        #expect(viewModel.selectedSubcategoryIDs.isEmpty)
-        #expect(viewModel.selectedSubcategories.isEmpty)
-        #expect(viewModel.selectionSummary == "No path selected")
-        #expect(viewModel.isDeleteSelectedDisabled)
     }
 
-    @Test func updateCategory_prunesSelectionForEmptySubcategories() {
-        let selectedSubcategory = makeSubCategory(name: "selected", size: 4_096)
-        let keptSubcategory = makeSubCategory(name: "kept", size: 2_048)
+    @Test func parentSelection_selectsAndClearsEveryNonEmptyLocation() {
+        let first = makeLocation(path: "Cache/A", size: 1_024)
+        let second = makeLocation(path: "Cache/B", size: 2_048)
+        let empty = makeLocation(path: "Cache/Empty", size: 0)
+        let grouped = makeSubCategory(
+            name: "VS Code",
+            locations: [first, second, empty]
+        )
         let viewModel = StorageCategoryDetailsViewModel(
-            category: makeCategory(
-                name: "Workspace Caches",
-                subcategories: [selectedSubcategory, keptSubcategory]
-            )
-        )
-        viewModel.updateSelection(subcategoryID: selectedSubcategory.id, isSelected: true)
-
-        let cleanedSelectedSubcategory = selectedSubcategory.updateSize(size: 0)
-        viewModel.updateCategory(
-            makeCategory(
-                name: "Workspace Caches",
-                subcategories: [cleanedSelectedSubcategory, keptSubcategory]
-            )
+            category: makeCategory(name: "IDE Caches", subcategories: [grouped])
         )
 
-        #expect(viewModel.isSelected(cleanedSelectedSubcategory) == false)
-        #expect(viewModel.selectedSubcategoryIDs.isEmpty)
-        #expect(viewModel.selectedSubcategories.isEmpty)
-        #expect(viewModel.nonEmptyPathCount == 1)
-        #expect(viewModel.selectionSummary == "No path selected")
-        #expect(viewModel.isDeleteSelectedDisabled)
+        viewModel.toggleSelection(for: grouped)
+
+        #expect(viewModel.selectionState(for: grouped) == .all)
+        #expect(viewModel.selectedLocationIDs == [first.id, second.id])
+        #expect(viewModel.selectedSize == 3_072)
+
+        viewModel.toggleSelection(for: grouped)
+
+        #expect(viewModel.selectionState(for: grouped) == .none)
+        #expect(viewModel.selectedLocationIDs.isEmpty)
     }
 
-    @Test func updateCategory_preservesSelectionForStillSelectableSubcategories() {
-        let selectedSubcategory = makeSubCategory(name: "selected", size: 4_096)
-        let viewModel = StorageCategoryDetailsViewModel(
-            category: makeCategory(
-                name: "Browser Caches",
-                subcategories: [selectedSubcategory]
-            )
+    @Test func expansion_changesVisibleRowsForGroupedSubcategory() {
+        let grouped = makeSubCategory(
+            name: "VS Code",
+            locations: [
+                makeLocation(path: "Cache/A", size: 1),
+                makeLocation(path: "Cache/B", size: 2),
+            ]
         )
-        viewModel.updateSelection(subcategoryID: selectedSubcategory.id, isSelected: true)
+        let viewModel = StorageCategoryDetailsViewModel(
+            category: makeCategory(name: "IDE Caches", subcategories: [grouped])
+        )
 
-        let refreshedSelectedSubcategory = selectedSubcategory.updateSize(size: 2_048)
+        viewModel.toggleExpansion(for: grouped.id)
+
+        #expect(viewModel.isExpanded(grouped))
+        #expect(viewModel.visibleRowCount == 3)
+
+        viewModel.toggleExpansion(for: grouped.id)
+
+        #expect(viewModel.isExpanded(grouped) == false)
+        #expect(viewModel.visibleRowCount == 1)
+    }
+
+    @Test func updateCategory_preservesValidSelectionAndPrunesEmptyLocation() {
+        let first = makeLocation(path: "Cache/A", size: 4_096)
+        let second = makeLocation(path: "Cache/B", size: 2_048)
+        let grouped = makeSubCategory(name: "Browser", locations: [first, second])
+        let viewModel = StorageCategoryDetailsViewModel(
+            category: makeCategory(name: "Browser Caches", subcategories: [grouped])
+        )
+        viewModel.toggleSelection(for: grouped)
+
+        let refreshedFirst = first.updateSize(0)
+        let refreshedSecond = second.updateSize(1_024)
         viewModel.updateCategory(
             makeCategory(
                 name: "Browser Caches",
-                subcategories: [refreshedSelectedSubcategory]
+                subcategories: [
+                    grouped.updateLocations([refreshedFirst, refreshedSecond])
+                ]
             )
         )
 
-        #expect(viewModel.isSelected(refreshedSelectedSubcategory))
-        #expect(viewModel.selectedSubcategories == [refreshedSelectedSubcategory])
-        #expect(viewModel.selectedSize == 2_048)
-        #expect(viewModel.selectionSummary == "1 selected - \(CGFloat(2_048).byteCountString)")
-        #expect(viewModel.isDeleteSelectedDisabled == false)
+        #expect(viewModel.selectedLocationIDs == [second.id])
+        #expect(viewModel.selectedSubcategories.first?.locations == [refreshedSecond])
+        #expect(viewModel.selectedSize == 1_024)
+        #expect(viewModel.selectionSummary == "1 selected - \(CGFloat(1_024).byteCountString)")
+    }
+
+    private func makeLocation(path: String, size: CGFloat) -> StorageLocationEntity {
+        StorageLocationEntity(path: path, rule: .allContents, size: size)
     }
 }

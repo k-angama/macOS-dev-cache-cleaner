@@ -67,6 +67,158 @@ struct CleanerHomeViewModelTests {
         ])
     }
 
+    @Test func startCleanup_forSelectedLocation_preservesUnselectedSibling() async {
+        let selectedLocation = StorageLocationEntity(
+            path: "Cache/Selected",
+            rule: .allContents,
+            size: 2
+        )
+        let unselectedLocation = StorageLocationEntity(
+            path: "Cache/Kept",
+            rule: .allContents,
+            size: 5
+        )
+        let grouped = makeSubCategory(
+            name: "VS Code",
+            locations: [selectedLocation, unselectedLocation]
+        )
+        let category = makeCategory(
+            name: "IDE Caches",
+            subcategories: [grouped]
+        )
+        let selectedSubcategory = grouped.updateLocations([selectedLocation])
+        let context = makeSUT(totalDiskCapacity: 500, availableDiskCapacity: 200)
+
+        context.homeAccessRepository.resolvedURL = testHomeURL
+        context.diskRepository.setComputeResponses([2, 0], for: selectedLocation.path)
+        context.viewModel.categories = [category]
+
+        context.viewModel.askRemoveSubcategories(
+            from: category,
+            subcategories: [selectedSubcategory]
+        )
+        _ = context.viewModel.startCleanup()
+
+        let didFinishCleanup = await waitUntil(timeout: 2) {
+            context.viewModel.isCleaning == false &&
+            context.viewModel.categories[0].size == 5
+        }
+
+        #expect(didFinishCleanup)
+        #expect(context.viewModel.categories[0].categories[0].locations == [
+            selectedLocation.updateSize(0),
+            unselectedLocation,
+        ])
+        #expect(context.diskRepository.cleanedPaths == [
+            context.diskRepository.key(path: selectedLocation.path)
+        ])
+    }
+
+    @Test func startCleanup_whenLocationsFail_listsExactPathsInAlert() async {
+        struct ExpectedError: Error {}
+
+        let first = StorageLocationEntity(
+            path: "Library/Caches/Tool/A",
+            rule: .allContents,
+            size: 2
+        )
+        let second = StorageLocationEntity(
+            path: "Library/Caches/Tool/B",
+            rule: .allContents,
+            size: 5
+        )
+        let grouped = makeSubCategory(name: "Tool", locations: [first, second])
+        let category = makeCategory(
+            name: "Development Tool Caches",
+            subcategories: [grouped]
+        )
+        let context = makeSUT(totalDiskCapacity: 500, availableDiskCapacity: 200)
+
+        context.homeAccessRepository.resolvedURL = testHomeURL
+        context.diskRepository.setComputeResponses([2, 2], for: first.path)
+        context.diskRepository.setComputeResponses([5, 5], for: second.path)
+        context.diskRepository.setCleanError(ExpectedError(), for: first.path)
+        context.diskRepository.setCleanError(ExpectedError(), for: second.path)
+        context.viewModel.categories = [category]
+
+        context.viewModel.askRemoveDirectory(entity: category)
+        _ = context.viewModel.startCleanup()
+
+        let didShowFailure = await waitUntil(timeout: 2) {
+            context.viewModel.isCleaning == false &&
+            context.viewModel.isAlertErrorRequest
+        }
+
+        #expect(didShowFailure)
+        #expect(
+            context.viewModel.alertErrorMessage ==
+            """
+            The following cache paths could not be deleted:
+
+            - Library/Caches/Tool/A
+            - Library/Caches/Tool/B
+            """
+        )
+        #expect(context.viewModel.isRetryFailedCleanupAvailable)
+    }
+
+    @Test func retryFailedCleanup_cleansOnlyPreviouslyFailedLocations() async {
+        struct ExpectedError: Error {}
+
+        let failedLocation = StorageLocationEntity(
+            path: "Library/Caches/Tool/Failed",
+            rule: .allContents,
+            size: 2
+        )
+        let cleanedLocation = StorageLocationEntity(
+            path: "Library/Caches/Tool/Cleaned",
+            rule: .allContents,
+            size: 5
+        )
+        let grouped = makeSubCategory(
+            name: "Tool",
+            locations: [failedLocation, cleanedLocation]
+        )
+        let category = makeCategory(
+            name: "Development Tool Caches",
+            subcategories: [grouped]
+        )
+        let context = makeSUT(totalDiskCapacity: 500, availableDiskCapacity: 200)
+
+        context.homeAccessRepository.resolvedURL = testHomeURL
+        context.diskRepository.setComputeResponses([2, 2], for: failedLocation.path)
+        context.diskRepository.setComputeResponses([5, 0], for: cleanedLocation.path)
+        context.diskRepository.setCleanError(ExpectedError(), for: failedLocation.path)
+        context.viewModel.categories = [category]
+
+        context.viewModel.askRemoveDirectory(entity: category)
+        _ = context.viewModel.startCleanup()
+
+        let didFail = await waitUntil(timeout: 2) {
+            context.viewModel.isCleaning == false &&
+            context.viewModel.isRetryFailedCleanupAvailable
+        }
+
+        context.diskRepository.removeCleanError(for: failedLocation.path)
+        context.diskRepository.setComputeResponses([2, 0], for: failedLocation.path)
+        context.viewModel.retryFailedCleanup()
+
+        let didRetry = await waitUntil(timeout: 2) {
+            context.viewModel.isCleaning == false &&
+            context.viewModel.categories[0].size == 0 &&
+            context.cleanupProgressStore.isFinished
+        }
+
+        #expect(didFail)
+        #expect(didRetry)
+        #expect(context.viewModel.isRetryFailedCleanupAvailable == false)
+        #expect(context.diskRepository.cleanedPaths == [
+            context.diskRepository.key(path: failedLocation.path),
+            context.diskRepository.key(path: cleanedLocation.path),
+            context.diskRepository.key(path: failedLocation.path),
+        ])
+    }
+
     @Test func startCleanup_withoutSelection_cleansAllNonEmptyCategories() async {
         let firstCategory = makeCategory(
             name: "First",

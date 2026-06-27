@@ -25,6 +25,16 @@ struct AlertPresenter {
         return alert.runModal() == .abort
     }
 
+    static func showRetryError(title: String, message: String) -> Bool {
+        let result = showConfirmation(
+            title: title,
+            message: message,
+            confirmTitle: "Retry Failed Paths",
+            cancelTitle: "Close"
+        )
+        return result.didConfirm
+    }
+
     static func showConfirmation(
         title: String,
         message: String,

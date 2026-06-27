@@ -12,7 +12,10 @@ struct StorageCategoryDetailsView: View {
     @State var viewModel: StorageCategoryDetailsViewModel
 
     private var pathsListHeight: CGFloat {
-        min(CGFloat(viewModel.pathCount) * 58, 500)
+        min(
+            CGFloat(viewModel.visibleRowCount) * Constants.Layout.DetailPanel.pathRowHeightEstimate,
+            Constants.Layout.DetailPanel.pathsListMaxHeight
+        )
     }
 
     var body: some View {
@@ -101,10 +104,19 @@ struct StorageCategoryDetailsView: View {
                         ForEach(viewModel.sortedSubcategories) { subcategory in
                             PathRowView(
                                 subcategory: subcategory,
-                                isSelected: viewModel.isSelected(subcategory),
-                                onSelectionChange: { isSelected in
+                                selectionState: viewModel.selectionState(for: subcategory),
+                                isExpanded: viewModel.isExpanded(subcategory),
+                                isLocationSelected: viewModel.isLocationSelected,
+                                isLocationSelectable: viewModel.isLocationSelectable,
+                                onToggleExpansion: {
+                                    viewModel.toggleExpansion(for: subcategory.id)
+                                },
+                                onToggleSelection: {
+                                    viewModel.toggleSelection(for: subcategory)
+                                },
+                                onLocationSelectionChange: { locationID, isSelected in
                                     viewModel.updateSelection(
-                                        subcategoryID: subcategory.id,
+                                        locationID: locationID,
                                         isSelected: isSelected
                                     )
                                 }
@@ -131,6 +143,10 @@ struct StorageCategoryDetailsView: View {
                         }
                         .disabled(viewModel.isDeleteSelectedDisabled)
                         .foregroundStyle(.red)
+                        .help("Delete selected paths")
+                        .accessibilityHint(
+                            "Deletes \(viewModel.selectionSummary.lowercased())."
+                        )
                     }
                 }
             }
@@ -150,31 +166,39 @@ struct StorageCategoryDetailsView: View {
 private extension StorageCategoryEntity {
     static var detailsPreview: StorageCategoryEntity {
         StorageCategoryEntity(
-            name: "IDE (JetBrains, VSCode) Caches",
+            name: "IDE Caches (VS Code, Unity, Android...)",
             color: .green,
             size: 4_711_485_440,
             categories: [
                 StorageSubCategoryEntity(
-                    path: "Library/Application Support/Code/User/workspaceStorage",
-                    rule: .allContents,
-                    size: 1_731_485_440
+                    name: "VS Code",
+                    locations: [
+                        StorageLocationEntity(
+                            path: "Library/Application Support/Code/User/workspaceStorage",
+                            rule: .allContents,
+                            size: 1_731_485_440
+                        ),
+                        StorageLocationEntity(
+                            path: "Library/Application Support/Code/CachedData",
+                            rule: .allContents,
+                            size: 1_280_000_000
+                        ),
+                        StorageLocationEntity(
+                            path: "Library/Application Support/Code/Cache",
+                            rule: .allContents,
+                            size: 845_000_000
+                        )
+                    ],
+                    size: 3_856_485_440
                 ),
                 StorageSubCategoryEntity(
-                    path: "Library/Application Support/Code/CachedData",
-                    rule: .allContents,
-                    size: 1_280_000_000
-                ),
-                StorageSubCategoryEntity(
-                    path: "Library/Application Support/Code/Cache",
-                    rule: .allContents,
-                    size: 845_000_000
-                ),
-                StorageSubCategoryEntity(
+                    name: "Android Studio",
                     path: "Library/Caches/JetBrains",
                     rule: .childNamePrefix("AndroidStudio"),
                     size: 615_000_000
                 ),
                 StorageSubCategoryEntity(
+                    name: "CocoaPods",
                     path: "Library/Caches/CocoaPods",
                     rule: .allContents,
                     size: 240_000_000

@@ -24,6 +24,9 @@ struct SettingsView: View {
         .navigationTitle("Settings")
         .padding(24)
         .frame(width: 660, height: 320, alignment: .topLeading)
+        .onAppear {
+            viewModel.setup()
+        }
         .onChange(of: viewModel.isAlertErrorRequest) { _, newValue in
             if newValue {
                 Task { @MainActor in

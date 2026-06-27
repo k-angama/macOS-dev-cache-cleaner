@@ -47,6 +47,10 @@ struct CleanupProgressView: View {
                     Text(viewModel.currentDirectoryPath ?? "Preparing cleanup...")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                        .accessibilityLabel("Current cleanup path")
+                        .accessibilityValue(
+                            viewModel.currentDirectoryPath ?? "Preparing cleanup"
+                        )
 
                     HStack {
                         Text("\(viewModel.deletedSizeText) of \(viewModel.totalSizeText) deleted")
@@ -60,6 +64,8 @@ struct CleanupProgressView: View {
 
                     ProgressView(value: viewModel.progress, total: 1)
                         .progressViewStyle(.linear)
+                        .accessibilityLabel("Cleanup progress")
+                        .accessibilityValue("\(viewModel.progressPercentage) percent")
                 }
             }
         }

@@ -37,6 +37,9 @@ final class SettingsDI: PresentationDI {
         let saveWorkspaceAccessUseCase = SaveWorkspaceAccessUseCase(
             workspaceAccessRepository: workspaceAccessRepository
         )
+        let resolveWorkspaceAccessUseCase = ResolveWorkspaceAccessUseCase(
+            workspaceAccessRepository: workspaceAccessRepository
+        )
         let resolveLaunchAtStartupStatusUseCase = ResolveLaunchAtStartupStatusUseCase(
             launchAtStartupRepository: launchAtStartupRepository
         )
@@ -45,6 +48,7 @@ final class SettingsDI: PresentationDI {
         )
         return SettingsViewModel(
             saveWorkspaceAccessUseCase: saveWorkspaceAccessUseCase,
+            resolveWorkspaceAccessUseCase: resolveWorkspaceAccessUseCase,
             resolveLaunchAtStartupStatusUseCase: resolveLaunchAtStartupStatusUseCase,
             updateLaunchAtStartupStatusUseCase: updateLaunchAtStartupStatusUseCase,
             settingsStore: settingsStore

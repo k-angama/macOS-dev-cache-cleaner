@@ -11,6 +11,13 @@ import SwiftUI
 
 @Observable
 class CleanerHomeViewModel {
+    private struct FailedCleanupRetryRequest {
+        let categories: [StorageCategoryEntity]
+        let workspaceCleanup: (
+            category: StorageCategoryEntity,
+            workspaceURL: URL
+        )?
+    }
 
     // MARK: - Output
 
@@ -25,6 +32,9 @@ class CleanerHomeViewModel {
     var categoryRowStates: [UUID: StorageCategoryRowState] = [:]
     var isAlertErrorRequest: Bool = false
     var alertErrorMessage: String = "No access directory"
+    var isRetryFailedCleanupAvailable: Bool {
+        failedCleanupRetryRequest != nil
+    }
     var isCleaning: Bool = false {
         didSet {
             guard oldValue, isCleaning == false, hasPendingWorkspaceSelectionSync else {
@@ -73,6 +83,7 @@ class CleanerHomeViewModel {
     private var isPartialCategoryCleanupSelected = false
     private var hasPendingWorkspaceSelectionSync = false
     private var didFinishInitialOverviewLoad = false
+    private var failedCleanupRetryRequest: FailedCleanupRetryRequest?
 
     // MARK: - UseCase
 
@@ -282,6 +293,8 @@ class CleanerHomeViewModel {
     }
 
     func startCleanup(includeWorkspaceInAllCaches: Bool = false) -> String? {
+        failedCleanupRetryRequest = nil
+
         if isWorkspaceCleanupSelected {
             return startCleanupForWorkspace()
         }
@@ -293,6 +306,64 @@ class CleanerHomeViewModel {
         }
 
         return startCleanupForSelectedCategory()
+    }
+
+    func dismissErrorAlert() {
+        isAlertErrorRequest = false
+        failedCleanupRetryRequest = nil
+    }
+
+    func retryFailedCleanup() {
+        guard
+            isCleaning == false,
+            let request = failedCleanupRetryRequest
+        else {
+            return
+        }
+
+        let homeURL: URL
+        if request.categories.isEmpty {
+            guard let workspaceURL = request.workspaceCleanup?.workspaceURL else {
+                dismissErrorAlert()
+                return
+            }
+            homeURL = workspaceURL
+        } else {
+            guard let resolvedHomeURL = resolveHomeAccessUseCase.execute() else {
+                failedCleanupRetryRequest = nil
+                alertErrorMessage = "Unable to access your Home directory."
+                isAlertErrorRequest = true
+                return
+            }
+            homeURL = resolvedHomeURL
+        }
+
+        failedCleanupRetryRequest = nil
+        isAlertErrorRequest = false
+        isCleaning = true
+
+        for category in request.categories {
+            setCategoryRowState(.deleting, for: category.id)
+        }
+        if request.workspaceCleanup != nil {
+            workspaceRowState = .deleting
+        }
+
+        let totalSize = request.categories.reduce(0) { $0 + $1.size }
+            + (request.workspaceCleanup?.category.size ?? 0)
+        cleanupProgressStore.start(
+            categoryName: "Retry Failed Paths",
+            totalSize: totalSize
+        )
+
+        Task { [weak self] in
+            await self?.performCleanup(
+                of: request.categories,
+                homeURL: homeURL,
+                workspaceCleanup: request.workspaceCleanup,
+                isPartialCategoryCleanup: true
+            )
+        }
     }
 
     func startCleanupForSelectedCategory() -> String? {
@@ -617,7 +688,18 @@ class CleanerHomeViewModel {
                 setCategoryRowState(.ready, for: entity.id)
 
                 if event.failedDirectories.isEmpty == false {
-                    alertErrorMessage = "Some cache directories could not be deleted."
+                    failedCleanupRetryRequest = FailedCleanupRetryRequest(
+                        categories: [
+                            entity
+                                .replacingSubcategories(with: event.failedDirectories)
+                                .updateSize()
+                        ],
+                        workspaceCleanup: nil
+                    )
+                    alertErrorMessage = failedCleanupMessage(
+                        title: "The following cache paths could not be deleted:",
+                        failedDirectories: event.failedDirectories
+                    )
                     isAlertErrorRequest = true
                 }
 
@@ -637,7 +719,8 @@ class CleanerHomeViewModel {
     private func performCleanup(
         of categoriesToClean: [StorageCategoryEntity],
         homeURL: URL,
-        workspaceCleanup: (category: StorageCategoryEntity, workspaceURL: URL)? = nil
+        workspaceCleanup: (category: StorageCategoryEntity, workspaceURL: URL)? = nil,
+        isPartialCategoryCleanup: Bool = false
     ) async {
         let categoriesCleanupSize = categoriesToClean.reduce(0) { $0 + $1.size }
         let workspaceCleanupSize = workspaceCleanup?.category.size ?? 0
@@ -645,6 +728,11 @@ class CleanerHomeViewModel {
         let categoryIDs = Set(categoriesToClean.map(\.id))
         var deletedSizeOffset: CGFloat = 0
         var failedDirectories: [StorageSubCategoryEntity] = []
+        var retryCategories: [StorageCategoryEntity] = []
+        var retryWorkspaceCleanup: (
+            category: StorageCategoryEntity,
+            workspaceURL: URL
+        )?
         var finishedCategoryCount = 0
 
         for await event in cleanAllStorageCategoriesUseCase.execute(
@@ -663,13 +751,23 @@ class CleanerHomeViewModel {
                 event,
                 categoryID: updatedCategory.id,
                 deletedSizeOffset: deletedSizeOffset,
-                totalProgressSize: totalCleanupSize
+                totalProgressSize: totalCleanupSize,
+                onCategoryUpdated: isPartialCategoryCleanup ? { [weak self] category in
+                    self?.updateSubcategories(category.categories, in: category.id)
+                } : nil
             )
 
             if event.phase == .finished {
                 finishedCategoryCount += 1
                 deletedSizeOffset = min(totalCleanupSize, deletedSizeOffset + event.deletedSize)
                 failedDirectories.append(contentsOf: event.failedDirectories)
+                if event.failedDirectories.isEmpty == false {
+                    retryCategories.append(
+                        updatedCategory
+                            .replacingSubcategories(with: event.failedDirectories)
+                            .updateSize()
+                    )
+                }
                 setCategoryRowState(.ready, for: updatedCategory.id)
             }
         }
@@ -698,7 +796,11 @@ class CleanerHomeViewModel {
                     deletedSizeOffset: deletedSizeOffset,
                     totalProgressSize: totalCleanupSize,
                     onCategoryUpdated: { [weak self] updatedCategory in
-                        self?.selectedWorkspaceCategory = updatedCategory
+                        if isPartialCategoryCleanup {
+                            self?.updateWorkspaceSubcategories(updatedCategory.categories)
+                        } else {
+                            self?.selectedWorkspaceCategory = updatedCategory
+                        }
                     }
                 )
 
@@ -706,6 +808,14 @@ class CleanerHomeViewModel {
                     didFinishWorkspace = true
                     deletedSizeOffset = min(totalCleanupSize, deletedSizeOffset + event.deletedSize)
                     failedDirectories.append(contentsOf: event.failedDirectories)
+                    if event.failedDirectories.isEmpty == false {
+                        retryWorkspaceCleanup = (
+                            workspaceCleanup.category
+                                .replacingSubcategories(with: event.failedDirectories)
+                                .updateSize(),
+                            workspaceCleanup.workspaceURL
+                        )
+                    }
                     workspaceRowState = .ready
                 }
             }
@@ -722,7 +832,14 @@ class CleanerHomeViewModel {
         isCleaning = false
 
         if failedDirectories.isEmpty == false {
-            alertErrorMessage = "Some cache directories could not be deleted."
+            failedCleanupRetryRequest = FailedCleanupRetryRequest(
+                categories: retryCategories,
+                workspaceCleanup: retryWorkspaceCleanup
+            )
+            alertErrorMessage = failedCleanupMessage(
+                title: "The following cache paths could not be deleted:",
+                failedDirectories: failedDirectories
+            )
             isAlertErrorRequest = true
         }
 
@@ -759,7 +876,19 @@ class CleanerHomeViewModel {
                 workspaceRowState = .ready
 
                 if event.failedDirectories.isEmpty == false {
-                    alertErrorMessage = "Some workspace directories could not be deleted."
+                    failedCleanupRetryRequest = FailedCleanupRetryRequest(
+                        categories: [],
+                        workspaceCleanup: (
+                            entity
+                                .replacingSubcategories(with: event.failedDirectories)
+                                .updateSize(),
+                            workspaceURL
+                        )
+                    )
+                    alertErrorMessage = failedCleanupMessage(
+                        title: "The following workspace paths could not be deleted:",
+                        failedDirectories: event.failedDirectories
+                    )
                     isAlertErrorRequest = true
                 }
 
@@ -774,6 +903,23 @@ class CleanerHomeViewModel {
             isCleaning = false
             workspaceRowState = .ready
         }
+    }
+
+    private func failedCleanupMessage(
+        title: String,
+        failedDirectories: [StorageSubCategoryEntity]
+    ) -> String {
+        var seenPaths: Set<String> = []
+        let paths = failedDirectories
+            .flatMap(\.locations)
+            .map(\.path)
+            .filter { seenPaths.insert($0).inserted }
+
+        guard paths.isEmpty == false else {
+            return title
+        }
+
+        return "\(title)\n\n\(paths.map { "- \($0)" }.joined(separator: "\n"))"
     }
 
     private func applyCleanupEvent(
@@ -847,7 +993,11 @@ class CleanerHomeViewModel {
 
     private func categoryIndex(containing path: String) -> Int? {
         categories.firstIndex { category in
-            category.categories.contains(where: { path.contains($0.path) })
+            category.categories.contains { subcategory in
+                subcategory.locations.contains { location in
+                    path.contains(location.path)
+                }
+            }
         }
     }
 
@@ -938,7 +1088,17 @@ private extension StorageCategoryEntity {
             uniqueKeysWithValues: updatedSubcategories.map { ($0.id, $0) }
         )
         let mergedSubcategories = categories.map { subcategory in
-            updatedByID[subcategory.id] ?? subcategory
+            guard let updatedSubcategory = updatedByID[subcategory.id] else {
+                return subcategory
+            }
+
+            let updatedLocationsByID = Dictionary(
+                uniqueKeysWithValues: updatedSubcategory.locations.map { ($0.id, $0) }
+            )
+            let mergedLocations = subcategory.locations.map { location in
+                updatedLocationsByID[location.id] ?? location
+            }
+            return subcategory.updateLocations(mergedLocations)
         }
 
         return StorageCategoryEntity(

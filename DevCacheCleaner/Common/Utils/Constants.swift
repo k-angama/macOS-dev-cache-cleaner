@@ -18,10 +18,39 @@ struct Constants {
     }
 
     struct StoragePath {
+        let name: String
+        let locations: [StorageLocation]
+
+        init(
+            name: String = "",
+            locations: [StorageLocation]
+        ) {
+            self.name = name
+            self.locations = locations
+        }
+
+        init(
+            _ path: String,
+            name: String = "",
+            rule: StoragePathRule = .allContents
+        ) {
+            self.init(
+                name: name,
+                locations: [
+                    StorageLocation(path: path, rule: rule)
+                ]
+            )
+        }
+    }
+
+    struct StorageLocation {
         let path: String
         let rule: StoragePathRule
 
-        init(_ path: String, rule: StoragePathRule = .allContents) {
+        init(
+            path: String,
+            rule: StoragePathRule = .allContents
+        ) {
             self.path = path
             self.rule = rule
         }
@@ -30,40 +59,105 @@ struct Constants {
     struct Storages {
         static let items: [StorageItem] = [
             StorageItem(
-                title: "IDE (JetBrains, VSCode) Caches",
+                title: "IDE Caches (VS Code, Cursor, Android Studio...)",
                 color: .green,
                 paths: [
-                    StoragePath("Library/Caches/CocoaPods"),
-                    StoragePath("Library/Application Support/Code/Cache"),
-                    StoragePath("Library/Application Support/Code/CachedData"),
-                    StoragePath("Library/Application Support/Code/User/workspaceStorage")
+                    StoragePath(
+                        name: "VS Code",
+                        locations: [
+                            StorageLocation(path: "Library/Application Support/Code/Cache"),
+                            StorageLocation(path: "Library/Application Support/Code/CachedData"),
+                            StorageLocation(path: "Library/Caches/com.microsoft.VSCode"),
+                            StorageLocation(path: "Library/Caches/com.microsoft.VSCode.ShipIt"),
+                        ]
+                    ),
+                    StoragePath(
+                        name: "Cursor",
+                        locations: [
+                            StorageLocation(path: "Library/Application Support/Cursor/Cache"),
+                            StorageLocation(path: "Library/Application Support/Cursor/CachedData"),
+                            StorageLocation(path: "Library/Application Support/Cursor/CachedExtensionVSIXs"),
+                            StorageLocation(path: "Library/Application Support/Cursor/Code Cache"),
+                            StorageLocation(path: "Library/Application Support/Cursor/GPUCache"),
+                            StorageLocation(path: "Library/Caches/com.todesktop.230313mzl4w4u92"),
+                            StorageLocation(path: "Library/Caches/com.todesktop.230313mzl4w4u92.ShipIt"),
+                        ]
+                    ),
+                    StoragePath(
+                        name: "Unity Hub",
+                        locations: [
+                            StorageLocation(path: "Library/Caches/com.unity3d.unityhub"),
+                            StorageLocation(path: "Library/Caches/com.unity3d.unityhub.ShipIt"),
+                        ]
+                    ),
+                    StoragePath(
+                        name: "Android",
+                        locations: [
+                            StorageLocation(
+                                path: "Library/Caches/Google",
+                                rule: .childNamePrefix("AndroidStudio")
+                            ),
+                            StorageLocation(
+                                path: "Library/Caches/JetBrains",
+                                rule: .childNamePrefix("AndroidStudio")
+                            ),
+                        ]
+                    ),
                 ]
             ),
             StorageItem(
-                title: "CocoaPods Caches",
-                color: .yellow,
-                paths: [
-                    StoragePath(".cocoapods/repos"),
-                    StoragePath("Library/Caches/CocoaPods"),
-                ]
-            ),
-            StorageItem(
-                title: "npm/yarn/Bun Caches",
+                title: "Package Manager Caches (npm, Homebrew, CocoaPods...)",
                 color: .orange,
                 paths: [
-                    StoragePath("Library/Caches/Yarn"),
-                    StoragePath(".npm-cache-user/_cacache"),
-                    StoragePath(".bun/install/cache"),
+                    StoragePath("Library/Caches/Yarn", name: "Yarn"),
+                    StoragePath(
+                        name: "npm",
+                        locations: [
+                            StorageLocation(path: ".npm-cache-user/_cacache"),
+                            StorageLocation(path: ".npm/_cacache"),
+                        ]
+                    ),
+                    StoragePath("Library/pnpm/store", name: "pnpm"),
+                    StoragePath(".bun/install/cache", name: "bun"),
+                    StoragePath("Library/Caches/CocoaPods", name: "CocoaPods"),
+                    StoragePath("Library/Caches/Homebrew", name: "Homebrew"),
+                    StoragePath("Library/Caches/composer", name: "Composer"),
+                    StoragePath("Library/Caches/org.swift.swiftpm", name: "SwiftPM"),
                 ]
             ),
             StorageItem(
-                title: "Android/Gradle Caches",
+                title: "Language Caches (Python, Rust, Go, Flutter...)",
+                color: .pink,
+                paths: [
+                    StoragePath("Library/Caches/pip", name: "Python / pip"),
+                    StoragePath("Library/Caches/uv", name: "Python / uv"),
+                    StoragePath("Library/Caches/pypoetry", name: "Python / Poetry"),
+                    StoragePath(
+                        name: "Rust / Cargo",
+                        locations: [
+                            StorageLocation(path: ".cargo/registry/cache"),
+                            StorageLocation(path: ".cargo/registry/src"),
+                            StorageLocation(path: ".cargo/git/checkouts"),
+                            StorageLocation(path: ".cargo/git/db"),
+                        ]
+                    ),
+                    StoragePath("Library/Caches/go-build", name: "Go build cache"),
+                    StoragePath("go/pkg/mod", name: "Go module cache"),
+                    StoragePath(".pub-cache", name: "Flutter / Dart"),
+                ]
+            ),
+            StorageItem(
+                title: "JVM Build Caches (Gradle, Maven...)",
                 color: .red,
                 paths: [
-                    StoragePath(".gradle/caches"),
-                    StoragePath(".gradle/daemon"),
-                    StoragePath("Library/Caches/Google", rule: .childNamePrefix("AndroidStudio")),
-                    StoragePath("Library/Caches/JetBrains", rule: .childNamePrefix("AndroidStudio"))
+                    StoragePath(
+                        name: "Gradle",
+                        locations: [
+                            StorageLocation(path: ".gradle/caches"),
+                            StorageLocation(path: ".gradle/daemon"),
+                        ]
+                    ),
+                    StoragePath(".m2/repository", name: "Maven"),
                 ]
             ),
             StorageItem(
@@ -77,36 +171,59 @@ struct Constants {
                     StoragePath("Library/Developer/Xcode/Products"),
                     StoragePath("Library/Developer/Xcode/DocumentationCache"),
                     StoragePath("Library/Developer/CoreSimulator/Devices"),
+                    StoragePath(
+                        name: "Xcode",
+                        locations: [
+                            StorageLocation(path: "Library/Caches/com.apple.dt.xcodebuild"),
+                            StorageLocation(path: "Library/Caches/com.apple.dt.Xcode.sourcecontrol.Git"),
+                        ]
+                    ),
+                    StoragePath("Library/Developer/CoreSimulator/Caches", name: "CoreSimulator"),
                 ]
             ),
             StorageItem(
-                title: "Browser Caches (Chrome, Brave, Firefox, Safari, Edge, Opera)",
+                title: "Browser Caches (Chrome, Safari, Firefox...)",
                 color: .brown,
                 paths: [
-                    StoragePath("Library/Caches/Google/Chrome"),
-                    StoragePath("Library/Caches/BraveSoftware/Brave-Browser"),
-                    StoragePath("Library/Caches/Firefox"),
-                    StoragePath("Library/Caches/com.apple.Safari"),
-                    StoragePath("Library/Caches/Microsoft Edge"),
-                    StoragePath("Library/Caches/com.microsoft.edgemac"),
-                    StoragePath("Library/Caches/com.operasoftware.Opera"),
-                    StoragePath("Library/Caches/com.operasoftware.OperaGX")
+                    StoragePath("Library/Caches/Google/Chrome", name: "Chrome"),
+                    StoragePath("Library/Caches/BraveSoftware/Brave-Browser", name: "Brave"),
+                    StoragePath("Library/Caches/Firefox", name: "Firefox"),
+                    StoragePath("Library/Caches/com.apple.Safari", name: "Safari"),
+                    StoragePath(
+                        name: "Edge",
+                        locations: [
+                            StorageLocation(path: "Library/Caches/Microsoft Edge"),
+                            StorageLocation(path: "Library/Caches/com.microsoft.edgemac"),
+                        ]
+                    ),
+                    StoragePath(
+                        name: "Opera",
+                        locations: [
+                            StorageLocation(path: "Library/Caches/com.operasoftware.Opera"),
+                            StorageLocation(path: "Library/Caches/com.operasoftware.OperaGX"),
+                        ]
+                    ),
                 ]
             ),
             StorageItem(
-                title: "Flutter/pub-cache",
-                color: .pink,
-                paths: [
-                    StoragePath(".pub-cache"),
-                ]
-            ),
-            StorageItem(
-                title: "Design App Caches",
+                title: "Design App Caches (Figma, Adobe, Motion...)",
                 color: .purple,
                 paths: [
-                    StoragePath("Library/Application Support/Figma"),
-                    StoragePath("Library/Application Support/Adobe/Common"),
-                    StoragePath("Library/Containers/Motion/Data/Library/Caches/com.apple.motionapp/Retiming Cache Files"),
+                    StoragePath("Library/Caches", name: "Figma", rule: .childNamePrefix("com.figma.")),
+                    StoragePath(
+                        name: "Adobe",
+                        locations: [
+                            StorageLocation(path: "Library/Caches/Adobe"),
+                            StorageLocation(
+                                path: "Library/Caches",
+                                rule: .childNamePrefix("com.adobe.")
+                            ),
+                            StorageLocation(path: "Library/Application Support/Adobe/Common/Media Cache"),
+                            StorageLocation(path: "Library/Application Support/Adobe/Common/Media Cache Files"),
+                        ]
+                    ),
+                    StoragePath("Library/Application Support/Adobe/AcroCef/DC/Acrobat/Cache", name: "Adobe Acrobat"),
+                    StoragePath("Library/Containers/Motion/Data/Library/Caches/com.apple.motionapp/Retiming Cache Files", name: "Motion"),
                 ]
             ),
         ]
@@ -124,6 +241,9 @@ struct Constants {
         struct DetailPanel {
             static let panelWidth: CGFloat = 460
             static let gap: CGFloat = 12
+            static let pathRowHeightEstimate: CGFloat = 58
+            static let pathsListMaxHeight: CGFloat = 500
+            static let resizeAnimationDuration: TimeInterval = 0.18
         }
 
         struct HomePanel {

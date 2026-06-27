@@ -48,66 +48,91 @@ struct CleanStorageCategoryUseCase {
 
                     let subCategory = updatedCategory.categories[index]
 
-                    continuation.yield(
-                        makeEvent(
-                            phase: .deletingDirectory,
-                            categoryName: category.name,
-                            currentDirectory: subCategory,
-                            updatedCategory: updatedCategory,
-                            deletedSize: deletedSize,
-                            totalSize: totalSize,
-                            failedDirectories: failedDirectories,
-                            totalDiskCapacity: nil,
-                            availableDiskCapacity: nil
-                        )
-                    )
+                    var deletedSizeForCurrentSubcategory: CGFloat = 0
+                    var failedLocations: [StorageLocationEntity] = []
+                    var lastProcessedLocationID: UUID?
 
-                    do {
-                        var deletedSizeForCurrentPath: CGFloat = 0
-                        try await diskRepository.cleanPath(
-                            homeURL: homeURL,
-                            path: subCategory.path,
-                            rule: subCategory.rule,
-                            expectedDeletedSize: subCategory.size,
-                            onFileDeleted: { deletedFileSize in
-                                deletedSizeForCurrentPath += deletedFileSize
-                                continuation.yield(
-                                    makeEvent(
-                                        phase: .progressUpdated,
-                                        categoryName: category.name,
-                                        currentDirectory: subCategory,
-                                        updatedCategory: updatedCategory,
-                                        deletedSize: min(totalSize, deletedSize + deletedSizeForCurrentPath),
-                                        totalSize: totalSize,
-                                        failedDirectories: failedDirectories,
-                                        totalDiskCapacity: nil,
-                                        availableDiskCapacity: nil
-                                    )
-                                )
-                            }
+                    for location in subCategory.locations {
+                        guard Task.isCancelled == false else {
+                            continuation.finish()
+                            return
+                        }
+
+                        let currentLocation = subCategory.updateLocations([location])
+                        lastProcessedLocationID = location.id
+
+                        continuation.yield(
+                            makeEvent(
+                                phase: .deletingDirectory,
+                                categoryName: category.name,
+                                currentDirectory: currentLocation,
+                                updatedCategory: updatedCategory,
+                                deletedSize: deletedSize,
+                                totalSize: totalSize,
+                                failedDirectories: failedDirectories,
+                                totalDiskCapacity: nil,
+                                availableDiskCapacity: nil
+                            )
                         )
-                    } catch DiskManagerError.directoryDoesNotExist {
-                    } catch {
-                        failedDirectories.append(subCategory)
+
+                        do {
+                            try await diskRepository.cleanPath(
+                                homeURL: homeURL,
+                                path: location.path,
+                                rule: location.rule,
+                                expectedDeletedSize: location.size,
+                                onFileDeleted: { deletedFileSize in
+                                    deletedSizeForCurrentSubcategory += deletedFileSize
+                                    continuation.yield(
+                                        makeEvent(
+                                            phase: .progressUpdated,
+                                            categoryName: category.name,
+                                            currentDirectory: currentLocation,
+                                            updatedCategory: updatedCategory,
+                                            deletedSize: min(
+                                                totalSize,
+                                                deletedSize + deletedSizeForCurrentSubcategory
+                                            ),
+                                            totalSize: totalSize,
+                                            failedDirectories: failedDirectories,
+                                            totalDiskCapacity: nil,
+                                            availableDiskCapacity: nil
+                                        )
+                                    )
+                                }
+                            )
+                        } catch DiskManagerError.directoryDoesNotExist {
+                        } catch {
+                            failedLocations.append(location)
+                        }
                     }
 
-                    let refreshedSize = await diskRepository.computeDiskSize(
+                    if failedLocations.isEmpty == false {
+                        failedDirectories.append(
+                            subCategory.updateLocations(failedLocations)
+                        )
+                    }
+
+                    let refreshedSubCategory = await refreshSubcategory(
                         homeURL: homeURL,
-                        path: subCategory.path,
-                        rule: subCategory.rule
+                        subCategory: subCategory
                     )
-                    let refreshedSubCategory = subCategory.updateSize(size: refreshedSize)
 
                     updatedCategory = updatedCategory
                         .updateCategory(index: index, subCategory: refreshedSubCategory)
                         .updateSize()
                     deletedSize = min(totalSize, max(totalSize - updatedCategory.size, 0))
+                    let lastProcessedLocation = refreshedSubCategory.locations.first {
+                        $0.id == lastProcessedLocationID
+                    }
 
                     continuation.yield(
                         makeEvent(
                             phase: .progressUpdated,
                             categoryName: category.name,
-                            currentDirectory: refreshedSubCategory,
+                            currentDirectory: lastProcessedLocation.map {
+                                refreshedSubCategory.updateLocations([$0])
+                            },
                             updatedCategory: updatedCategory,
                             deletedSize: deletedSize,
                             totalSize: totalSize,
@@ -151,12 +176,10 @@ struct CleanStorageCategoryUseCase {
                 return updatedCategory
             }
 
-            let refreshedSize = await diskRepository.computeDiskSize(
+            let refreshedSubCategory = await refreshSubcategory(
                 homeURL: homeURL,
-                path: subCategory.path,
-                rule: subCategory.rule
+                subCategory: subCategory
             )
-            let refreshedSubCategory = subCategory.updateSize(size: refreshedSize)
 
             updatedCategory = updatedCategory
                 .updateCategory(index: index, subCategory: refreshedSubCategory)
@@ -164,6 +187,28 @@ struct CleanStorageCategoryUseCase {
         }
 
         return updatedCategory
+    }
+
+    private func refreshSubcategory(
+        homeURL: URL,
+        subCategory: StorageSubCategoryEntity
+    ) async -> StorageSubCategoryEntity {
+        var updatedLocations: [StorageLocationEntity] = []
+
+        for location in subCategory.locations {
+            guard Task.isCancelled == false else {
+                return subCategory.updateLocations(updatedLocations)
+            }
+
+            let size = await diskRepository.computeDiskSize(
+                homeURL: homeURL,
+                path: location.path,
+                rule: location.rule
+            )
+            updatedLocations.append(location.updateSize(size))
+        }
+
+        return subCategory.updateLocations(updatedLocations)
     }
 
     private func makeEvent(

@@ -26,12 +26,22 @@ struct RefreshStorageCategoryUseCase {
                 return updatedCategory.updateSize()
             }
 
-            let size = await diskRepository.computeDiskSize(
-                homeURL: homeURL,
-                path: subCategory.path,
-                rule: subCategory.rule
-            )
-            let updatedSubCategory = subCategory.updateSize(size: size)
+            var updatedLocations: [StorageLocationEntity] = []
+
+            for location in subCategory.locations {
+                guard Task.isCancelled == false else {
+                    return updatedCategory.updateSize()
+                }
+
+                let size = await diskRepository.computeDiskSize(
+                    homeURL: homeURL,
+                    path: location.path,
+                    rule: location.rule
+                )
+                updatedLocations.append(location.updateSize(size))
+            }
+
+            let updatedSubCategory = subCategory.updateLocations(updatedLocations)
 
             updatedCategory = updatedCategory
                 .updateCategory(index: index, subCategory: updatedSubCategory)
