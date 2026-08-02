@@ -226,6 +226,23 @@ struct Constants {
                     StoragePath("Library/Containers/Motion/Data/Library/Caches/com.apple.motionapp/Retiming Cache Files", name: "Motion"),
                 ]
             ),
+            StorageItem(
+                title: "Productivity App Caches (Notion)",
+                color: .indigo,
+                paths: [
+                    StoragePath(
+                        name: "Notion",
+                        locations: [
+                            StorageLocation(
+                                path: "Library/Application Support/Notion/Partitions/notion/Service Worker/CacheStorage"
+                            ),
+                            StorageLocation(
+                                path: "Library/Application Support/Notion/Partitions/notion/Cache/Cache_Data"
+                            ),
+                        ]
+                    ),
+                ]
+            ),
         ]
     }
     

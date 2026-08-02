@@ -140,6 +140,7 @@ displayed, and cleaned as a single category in the app.
 | Xcode Caches and DerivedData | DerivedData, Archives, simulator data, Xcode caches | `~/Library/Developer/Xcode/DerivedData`, `~/Library/Developer/Xcode/Archives`, `~/Library/Developer/CoreSimulator/Devices` |
 | Browser Caches (Chrome, Safari, Firefox...) | Chrome, Brave, Firefox, Safari, Edge, and Opera caches | `~/Library/Caches/Google/Chrome`, `~/Library/Caches/BraveSoftware/Brave-Browser`, `~/Library/Caches/com.apple.Safari` |
 | Design App Caches (Figma, Adobe, Motion...) | Figma, Adobe, and Apple Motion cache data | `~/Library/Application Support/Figma`, `~/Library/Application Support/Adobe/Common`, `~/Library/Containers/Motion/Data/Library/Caches/com.apple.motionapp/Retiming Cache Files` |
+| Productivity App Caches (Notion) | Notion service-worker and HTTP cache data | `~/Library/Application Support/Notion/Partitions/notion/Service Worker/CacheStorage`, `~/Library/Application Support/Notion/Partitions/notion/Cache/Cache_Data` |
 
 Some built-in categories use prefix-based matching. For example, the
 IDE category only targets `AndroidStudio*` directories inside

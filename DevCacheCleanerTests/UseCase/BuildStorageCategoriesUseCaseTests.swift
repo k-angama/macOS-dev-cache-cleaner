@@ -67,6 +67,13 @@ struct BuildStorageCategoriesUseCaseTests {
             .first(where: { $0.title == "Design App Caches (Figma, Adobe, Motion...)" })?
             .paths
             .first(where: { $0.name == "Adobe" })
+        let notionCategory = categories.first {
+            $0.name == "Productivity App Caches (Notion)"
+        }
+        let notionPath = Constants.Storages.items
+            .first(where: { $0.title == "Productivity App Caches (Notion)" })?
+            .paths
+            .first(where: { $0.name == "Notion" })
 
         #expect(categories.count == Constants.Storages.items.count)
         #expect(actualSubcategoryCount == expectedSubcategoryCount)
@@ -100,5 +107,11 @@ struct BuildStorageCategoriesUseCaseTests {
         #expect(languageToolchainCaches?.categories.contains(where: { $0.name == "Go build cache" }) == true)
         #expect(jvmBuildToolCaches?.categories.contains(where: { $0.name == "Gradle" }) == true)
         #expect(jvmBuildToolCaches?.categories.contains(where: { $0.name == "Maven" }) == true)
+        #expect(notionCategory?.categories.count == 1)
+        #expect(notionPath?.locations.count == 2)
+        #expect(notionPath?.locations.map(\.path) == [
+            "Library/Application Support/Notion/Partitions/notion/Service Worker/CacheStorage",
+            "Library/Application Support/Notion/Partitions/notion/Cache/Cache_Data",
+        ])
     }
 }
