@@ -227,7 +227,7 @@ struct Constants {
                 ]
             ),
             StorageItem(
-                title: "Productivity App Caches (Notion)",
+                title: "Productivity App Caches (Notion...)",
                 color: .indigo,
                 paths: [
                     StoragePath(

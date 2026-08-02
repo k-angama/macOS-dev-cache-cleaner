@@ -68,10 +68,10 @@ struct BuildStorageCategoriesUseCaseTests {
             .paths
             .first(where: { $0.name == "Adobe" })
         let notionCategory = categories.first {
-            $0.name == "Productivity App Caches (Notion)"
+            $0.name == "Productivity App Caches (Notion...)"
         }
         let notionPath = Constants.Storages.items
-            .first(where: { $0.title == "Productivity App Caches (Notion)" })?
+            .first(where: { $0.title == "Productivity App Caches (Notion...)" })?
             .paths
             .first(where: { $0.name == "Notion" })
 
